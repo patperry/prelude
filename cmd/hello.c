@@ -3,11 +3,11 @@
 #include "prelude.h"
 
 int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
     Initialize();
     printf("hello world\n");
     Finalize();
     return EXIT_SUCCESS;
-
-    (void)argc;
-    (void)argv;
 }
