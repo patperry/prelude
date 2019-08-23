@@ -22,26 +22,34 @@ typedef struct Bytes {
     Int len;
 } Bytes;
 
-#define Bytes_None NULL
 Bytes *B(const char *str);
+
+void Bytes_Teardown(void *arg);
+Bool Bytes_None(Bytes *b);
 
 typedef struct String {
     Bytes bytes;
 } String;
 
-#define String_None Bytes_None
 String *S(const char *str);
+
+void String_Teardown(void *arg);
+Bool String_None(String *s);
 
 typedef struct Error {
     String string;
 } Error;
 
-#define Error_None String_None
+void Error_Setup(Error *e, String fmt, ...);
+void Error_Teardown(void *arg);
+Bool Error_None(Error *e);
 
 /* Runtime */
 
 void Initialize(void);
 void Finalize(void);
+
+void TODO(void);
 
 /* Strings */
 
