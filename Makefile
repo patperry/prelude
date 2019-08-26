@@ -4,15 +4,16 @@ MKDIR_P = mkdir -p
 RANLIB = ranlib
 
 LIBS += -lm `pkg-config --libs openssl`
-CFLAGS += -Weverything -pedantic -Werror -Wno-padded -Wno-missing-noreturn -g `pkg-config --cflags openssl`
+CFLAGS += -Weverything -pedantic -Werror -Wno-padded -Wno-missing-noreturn -Wno-cast-qual -Wno-gnu-empty-initializer -g `pkg-config --cflags openssl`
 CPPFLAGS += -Ipkg
 LDFLAGS += -g
 
 PACKAGE_A = pkg/libprelude.a
-PACKAGE_O = pkg/bytes.o pkg/core.o pkg/error.o pkg/string.o pkg/test.o
+PACKAGE_O = pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
+			pkg/string.o pkg/test.o
 
 ALL_O = $(PACKAGE_O) cmd/hello.o
-ALL_T = $(PACKAGE_A) bin/hello bin/test_string
+ALL_T = $(PACKAGE_A) bin/hello test/test_string
 ALL_A = $(PACKAGE_A)
 
 .PHONY: all
@@ -25,7 +26,7 @@ $(PACKAGE_A): $(PACKAGE_O)
 bin/hello: cmd/hello.o $(PACKAGE_A)
 	$(MKDIR_P) bin && $(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-bin/test_string: test/test_string.o $(PACKAGE_A)
+test/test_string: test/test_string.o $(PACKAGE_A)
 	$(MKDIR_P) bin && $(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 pkg/%.o : pkg/%.c pkg/prelude.h
@@ -34,3 +35,7 @@ pkg/%.o : pkg/%.c pkg/prelude.h
 .PHONY: clean
 clean:
 	$(RM) $(ALL_T) $(ALL_O)
+
+.PHONY: check
+check: test/test_string
+	test/test_string

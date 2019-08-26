@@ -1,33 +1,34 @@
-#include "prelude.h"
-#include "string.h"
-#include "test.h"
+#include "prelude/string.h"
+#include "prelude/test.h"
 
 
-static Bool prop_view_utf8_bytes(void) {
-    String *s = Test_String();
+static void prop_view_utf8_bytes(void) {
+    String *s = Test_GenString();
 
     StringView v;
-    Error err;
+    Error err = {0};
     String_ViewBytes(&v, &s->bytes, &err);
-
-    if (!Error_None(&err)) {
-        Error_Teardown(&err);
-        return False;
-    }
-
-    return True;
+    Assert_ErrorNone(&err);
 }
 
-static Test string_tests[] = {
-    {Test_Prop, "view utf8 bytes", prop_view_utf8_bytes},
-    {Test_None, NULL, NULL}
-};
-
-static TestGroup tests[] = {
-    {"string", string_tests},
-    {NULL, NULL}
-};
 
 int main(int argc, const char **argv) {
-    return Test_Main(argc, argv, tests);
+    Initialize();
+    Open();
+
+    TestGroup string;
+    TestGroup_Setup(&string, S("string"));
+    Defer(TestGroup_Teardown, &string);
+    TestGroup_Property(&string, S("view utf8 bytes"), prop_view_utf8_bytes);
+
+    TestSuite suite;
+    TestSuite_Setup(&suite);
+    Defer(TestSuite_Teardown, &suite);
+    TestSuite_Add(&suite, &string);
+
+    int ret = Test_Main(argc, argv, &suite);
+
+    Close();
+    Finalize();
+    return ret;
 }

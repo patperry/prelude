@@ -9,3 +9,7 @@ void Bytes_Teardown(void *arg) {
 Bool Bytes_None(Bytes *b) {
     return b->ptr == NULL;
 }
+
+Bool Bytes_Some(Bytes *b) {
+    return b->ptr != NULL;
+}
