@@ -49,13 +49,13 @@ void Panic(String *fmt, ...) {
 void Defer(void (*func)(void *arg), void *arg) {
     (void)func;
     (void)arg;
-    TODO();
+    // TODO
 }
 
 void Trap(void (*func)(void *arg), void *arg) {
     (void)func;
     (void)arg;
-    TODO();
+    // TODO
 }
 
 String *S(const char *str) {

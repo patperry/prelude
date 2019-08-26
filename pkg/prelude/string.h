@@ -2,15 +2,17 @@
 #define PRELUDE_STRING_H
 
 #include "prelude.h"
-#include "prelude/array.h"
+#include "prelude/bytes.h"
 
 typedef struct StringBuilder {
-    ByteArray buf;
-    String string;
+    BytesBuilder bytes;
 } StringBuilder;
 
 void StringBuilder_Setup(StringBuilder *b);
 void StringBuilder_Teardown(void *arg);
+void StringBuilder_WriteChar(StringBuilder *b, Char c);
+void StringBuilder_WriteInt(StringBuilder *b, Int x);
+void StringBuilder_WriteString(StringBuilder *b, String *s);
 void StringBuilder_WriteFormat(StringBuilder *b, String *fmt, ...);
 void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
                                       va_list ap);
@@ -23,5 +25,7 @@ typedef struct StringView {
 } StringView;
 
 void String_ViewBytes(StringView *v, Bytes *b, Error *err);
+
+void String_Split(String *s, String *sep, StringView *head, StringView *tail);
 
 #endif /* PRELUDE_STRING_H */

@@ -32,6 +32,7 @@ void Bytes_Teardown(void *arg);
 Bool Bytes_Some(Bytes *b);
 Bool Bytes_None(Bytes *b);
 
+typedef Int Char;
 
 typedef struct String {
     Bytes bytes;
@@ -89,19 +90,16 @@ void Memory_Setup(Memory *mem, Int len);
 void Memory_Teardown(void *arg);
 
 
-
 #define Assert(expr) \
     do { \
         if (!(expr)) { \
-            Panic(S("assertion \"%s\" failed: file \"%s\", line %d"), \
-                  "expr", __FILE__, __LINE__); \
+            Panic(S("assertion \"%s\" failed: function %s, file \"%s\", line %d"), \
+                  "expr", S(__func__), S(__FILE__), __LINE__); \
         } \
     } while (0)
 
 #define TODO() \
-    Panic(S("not implemented: file \"%s\", line %d"), __FILE__, __LINE__)
-
-
-/* Strings */
+    Panic(S("not implemented: function %s, file \"%s\", line %d"), \
+          S(__func__), S(__FILE__), __LINE__)
 
 #endif /* PRELUDE_H */
