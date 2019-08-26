@@ -39,6 +39,20 @@ void String_ViewBytes(StringView *v, Bytes *b, Error *err) {
     TODO();
 }
 
+Bool String_UnCons(String *s, Char *head, StringView *tail) {
+    if (String_None(s)) {
+        *head = Char_None;
+        tail->string = *s;
+        return False;
+    } else {
+        *head = s->bytes.ptr[0];
+        Assert(*head <= 0x7F); // TODO: Unicode
+        tail->string.bytes.ptr = s->bytes.ptr + 1;
+        tail->string.bytes.len = s->bytes.len - 1;
+        return True;
+    }
+}
+
 void String_Split(String *s, String *sep, StringView *head, StringView *tail) {
     BytesView xhead, xtail;
     Bytes_Split(&s->bytes, &sep->bytes, &xhead, &xtail);
@@ -85,24 +99,25 @@ void StringBuilder_WriteFormat(StringBuilder *b, String *fmt, ...) {
 
 void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
                                       va_list ap) {
+    Char c, fmtc;
     Int i;
-    String *s;
-    String *sep = S("%");
+    String *s, *sep = S("%");
+    StringView head, tail, left;
 
-    StringView left = {*fmt};
+    left.string = *fmt;
 
     while (String_Some(&left.string)) {
-        StringView head, tail;
         String_Split(&left.string, sep, &head, &tail);
-
         StringBuilder_WriteString(b, &head.string);
 
-        if (String_Some(&tail.string)) {
-            // TODO: handle unicode
-            Byte fmtc = tail.string.bytes.ptr[0];
+        if (String_UnCons(&tail.string, &fmtc, &left)) {
             switch (fmtc) {
             case '%':
                 StringBuilder_WriteChar(b, '%');
+                break;
+            case 'c':
+                c = va_arg(ap, Char);
+                StringBuilder_WriteChar(b, c);
                 break;
             case 'd':
                 i = va_arg(ap, Int);
@@ -115,10 +130,6 @@ void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
             default:
                 Panic(S("unrecognized format %c"), fmtc);
             }
-
-            // TODO: this is a hack
-            left.string.bytes.ptr = tail.string.bytes.ptr + 1;
-            left.string.bytes.len = tail.string.bytes.len - 1;
         } else {
             left.string = (String){};
         }

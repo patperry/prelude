@@ -19,6 +19,7 @@ typedef int Int;
 #define Int_Max INT_MAX
 
 typedef unsigned char Byte;
+#define Byte_None (Byte)0
 
 typedef struct Bytes {
     Byte *ptr;
@@ -33,6 +34,7 @@ Bool Bytes_Some(Bytes *b);
 Bool Bytes_None(Bytes *b);
 
 typedef Int Char;
+#define Char_None (Char)0
 
 typedef struct String {
     Bytes bytes;

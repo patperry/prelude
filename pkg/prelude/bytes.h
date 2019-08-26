@@ -20,6 +20,7 @@ typedef struct BytesView {
     Bytes bytes;
 } BytesView;
 
+Bool Bytes_UnCons(Bytes *s, Byte *head, BytesView *tail);
 void Bytes_Split(Bytes *s, Bytes *sep, BytesView *head, BytesView *tail);
 
 #endif /* PRELUDE_BYTES_H */

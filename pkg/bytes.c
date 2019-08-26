@@ -15,6 +15,19 @@ Bool Bytes_Some(Bytes *b) {
     return b->ptr != NULL;
 }
 
+Bool Bytes_UnCons(Bytes *b, Byte *head, BytesView *tail) {
+    if (Bytes_None(b)) {
+        *head = Byte_None;
+        tail->bytes = *b;
+        return False;
+    } else {
+        *head = b->ptr[0];
+        tail->bytes.ptr = b->ptr + 1;
+        tail->bytes.len = b->len - 1;
+        return True;
+    }
+}
+
 void Bytes_Split(Bytes *b, Bytes *sep, BytesView *head, BytesView *tail) {
     if (Bytes_None(sep)) {
         head->bytes = (Bytes){};
