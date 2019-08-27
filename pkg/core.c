@@ -2,34 +2,143 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "prelude.h"
-#include "prelude/array.h"
+#include "prelude/string.h"
+
+// Don't use array for literals, to avoid circular dependency
 
 enum {
-    LiteralBuffer = 32
+    Literals_Cap = 1024
 };
 
+typedef struct Literals {
+    Bytes *items; // never reallocate, so literals have stable pointers
+    Int len;
+    Int cap;
+} Literals;
+
+static void Literals_Setup(Literals *l) {
+    l->len = 0;
+    l->cap = Literals_Cap;
+    l->items = Alloc(l->cap * SizeOf(*l->items));
+}
+
+static void Literals_Teardown(void *arg) {
+    Literals *l = arg;
+    Free(l->items, l->cap * SizeOf(*l->items));
+}
+
+typedef struct LiteralsArray {
+    Literals *items;
+    Int len;
+    Int cap;
+} LiteralsArray;
+
+static void LiteralsArray_Setup(LiteralsArray *a) {
+    a->cap = 0;
+    a->len = 0;
+    a->items = NULL;
+}
+
+static void LiteralsArray_Teardown(void *arg) {
+    LiteralsArray *a = arg;
+    Int n = a->len;
+    while (n-- > 0) {
+        Literals_Teardown(&a->items[n]);
+    }
+    Free(a->items, a->cap * SizeOf(*a->items));
+}
+
+static void LiteralsArray_Grow(LiteralsArray *a) {
+    Int n = a->len;
+    if (n == 0 || a->items[n - 1].len == a->items[n - 1].cap) {
+        if (a->len == a->cap) {
+            a->items = Realloc(a->items, n * SizeOf(*a->items),
+                               (n + 1) * SizeOf(*a->items));
+            a->cap = n + 1;
+        }
+        Literals_Setup(&a->items[n]);
+        a->len = n + 1;
+    }
+}
+
+static Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
+    LiteralsArray_Grow(a);
+    Literals *l = &a->items[a->len - 1];
+    Bytes *item = &l->items[l->len++];
+    *item = *x;
+    return item;
+}
+
 typedef struct Runtime {
-    BytesArray literals;
+    LiteralsArray literals;
 } Runtime;
 
 static Runtime runtime;
 
 void Initialize(void) {
-    BytesArray_Setup(&runtime.literals);
-    Trap(BytesArray_Teardown, &runtime.literals);
-    BytesArray_Grow(&runtime.literals, LiteralBuffer);
+    LiteralsArray_Setup(&runtime.literals);
 }
 
 void Finalize(void) {
-    BytesArray_Teardown(&runtime.literals);
+    LiteralsArray_Teardown(&runtime.literals);
 }
 
 void Open(void) {
 }
 
 void Close(void) {
+}
+
+typedef enum LogType {
+    Log_None = 0,
+    Log_Debug,
+    Log_Info
+} LogType;
+
+static void Log(LogType type, String *fmt, va_list ap) {
+    StringBuilder b;
+    StringBuilder_Setup(&b);
+    Defer(StringBuilder_Teardown, &b);
+
+    StringBuilder_WriteFormatArgList(&b, fmt, ap);
+
+    String s;
+    String_SetupWithBuilder(&s, &b);
+    Defer(String_Teardown, &s);
+
+    if (type == Log_Info) {
+        fprintf(stdout, "%.*s\n", s.bytes.len, s.bytes.ptr);
+        fflush(stdout);
+    } else if (type == Log_Debug) {
+        time_t clock;
+        struct tm tm;
+
+        time(&clock);
+        tm = *gmtime(&clock); // TODO: replace with reentrant version
+
+        fprintf(stderr, "%d-%02d-%02d %02d:%02d:%02d [DEBUG] %.*s\n",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec,
+                s.bytes.len, s.bytes.ptr);
+        fflush(stderr);
+    }
+}
+
+void Debug(String *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    Log(Log_Debug, fmt, ap);
+    va_end(ap);
+}
+
+void Info(String *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    Log(Log_Info, fmt, ap);
+    va_end(ap);
 }
 
 void Panic(String *fmt, ...) {
@@ -64,15 +173,23 @@ String *S(const char *str) {
 }
 
 Bytes *B(const char *str) {
-    BytesArray_Grow(&runtime.literals, 1);
-    Int n = runtime.literals.len++;
-    runtime.literals.items[n] = (Bytes){
+    Int i, n = runtime.literals.len;
+    for (i = 0; i < n; i++) {
+        Literals *l = &runtime.literals.items[i];
+        Int j, m = l->len;
+        for (j = 0; j < m; j++) {
+            if ((const char *)l->items[j].ptr == str) {
+                return &l->items[j];
+            }
+        }
+    }
+
+    Bytes b = {
         .ptr = (Byte *)str,
         .len = (Int)strlen(str)
     };
-    return &runtime.literals.items[n];
+    return LiteralsArray_Push(&runtime.literals, &b);
 }
-
 
 void Memory_Setup(Memory *mem, Int len) {
     mem->ptr = Alloc(len);
@@ -102,6 +219,7 @@ void *Realloc(void *ptr, Int from, Int to) {
 
     ptr = realloc(ptr, (size_t)to);
     if (!ptr) {
+        // TODO: avoid allocation on panic
         Panic(S("failed allocating %d bytes"), to);
     }
 

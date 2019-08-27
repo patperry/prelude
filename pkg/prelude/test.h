@@ -2,7 +2,8 @@
 #define TEST_H
 
 #include "prelude.h"
-#include "assert.h"
+#include "prelude/array.h"
+#include "prelude/assert.h"
 
 typedef enum {
     Test_None = 0,
@@ -11,26 +12,38 @@ typedef enum {
 
 typedef struct Test {
     TestType type;
-    const char *name;
+    String name;
     void (*func)(void);
 } Test;
 
+void Test_Setup(Test *t, TestType type, String *name, void (*func)(void));
+void Test_Teardown(void *arg);
+Bool Test_Run(Test *t);
+
+Define_Array(Test)
+
 typedef struct TestGroup {
-    const char *name;
-    Test *tests;
+    String name;
+    TestArray tests;
 } TestGroup;
+
+Define_Array(TestGroup)
 
 void TestGroup_Setup(TestGroup *g, String *name);
 void TestGroup_Teardown(void *arg);
 void TestGroup_Property(TestGroup *g, String *name, void (*prop)(void));
+Bool TestGroup_Run(TestGroup *g);
 
 typedef struct TestSuite {
-    TestGroup *groups;
+    TestGroupArray groups;
 } TestSuite;
 
 void TestSuite_Setup(TestSuite *s);
 void TestSuite_Teardown(void *arg);
-void TestSuite_Add(TestSuite *s, TestGroup *g);
+Int TestSuite_Group(TestSuite *s, String *name);
+void TestSuite_Property(TestSuite *s, Int group, String *name,
+                        void (*prop)(void));
+Bool TestSuite_Run(TestSuite *s);
 
 String *Test_GenString(void);
 

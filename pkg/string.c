@@ -18,6 +18,10 @@ void String_SetupWithArgList(String *s, String *fmt, va_list ap) {
     String_SetupWithBuilder(s, &b);
 }
 
+void String_SetupWithCopy(String *s, String *other) {
+    Bytes_SetupWithCopy(&s->bytes, &other->bytes);
+}
+
 void String_Teardown(void *arg) {
     String *s = arg;
     Bytes_Teardown(&s->bytes);
@@ -31,12 +35,14 @@ Bool String_Some(String *s) {
     return Bytes_Some(&s->bytes);
 }
 
+Bool String_Eq(String *s1, String *s2) {
+    return Bytes_Eq(&s1->bytes, &s2->bytes);
+}
 
 void String_ViewBytes(StringView *v, Bytes *b, Error *err) {
-    (void)v;
-    (void)b;
+    // TODO
     (void)err;
-    TODO();
+    v->string.bytes = *b;
 }
 
 Bool String_UnCons(String *s, Char *head, StringView *tail) {

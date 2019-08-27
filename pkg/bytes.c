@@ -1,10 +1,15 @@
 #include <string.h>
 #include "prelude/bytes.h"
 
+void Bytes_SetupWithCopy(Bytes *b, Bytes *other) {
+    b->ptr = Alloc(other->len);
+    b->len = other->len;
+    memcpy(b->ptr, other->ptr, b->len);
+}
+
 void Bytes_Teardown(void *arg) {
     Bytes *b = arg;
-    (void)b;
-    TODO();
+    Free(b->ptr, b->len);
 }
 
 Bool Bytes_None(Bytes *b) {
@@ -13,6 +18,16 @@ Bool Bytes_None(Bytes *b) {
 
 Bool Bytes_Some(Bytes *b) {
     return b->ptr != NULL;
+}
+
+Bool Bytes_Eq(Bytes *b1, Bytes *b2) {
+    if (b1->len != b2->len) {
+        return False;
+    } else if (memcmp(b1->ptr, b2->ptr, (size_t)b1->len) == 0) {
+        return True;
+    } else {
+        return False;
+    }
 }
 
 Bool Bytes_UnCons(Bytes *b, Byte *head, BytesView *tail) {

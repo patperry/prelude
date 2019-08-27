@@ -28,10 +28,12 @@ typedef struct Bytes {
 
 Bytes *B(const char *str);
 
+void Bytes_SetupWithCopy(Bytes *b, Bytes *other);
 void Bytes_Teardown(void *arg);
 
 Bool Bytes_Some(Bytes *b);
 Bool Bytes_None(Bytes *b);
+Bool Bytes_Eq(Bytes *b1, Bytes *b2);
 
 typedef Int Char;
 #define Char_None (Char)0
@@ -44,10 +46,12 @@ String *S(const char *str);
 
 void String_Setup(String *s, String *fmt, ...);
 void String_SetupWithArgList(String *s, String *fmt, va_list ap);
+void String_SetupWithCopy(String *s, String *other);
 void String_Teardown(void *arg);
 
 Bool String_Some(String *s);
 Bool String_None(String *s);
+Bool String_Eq(String *s1, String *s2);
 
 
 typedef struct Error {
@@ -74,6 +78,11 @@ void Panic(String *fmt, ...) __attribute__((noreturn));
 void Defer(void (*func)(void *arg), void *arg);
 void Trap(void (*func)(void *arg), void *arg);
 
+/* Logging */
+
+void Debug(String *fmt, ...);
+void Info(String *fmt, ...);
+
 
 /* Memory allocation */
 
@@ -92,13 +101,12 @@ void Memory_Setup(Memory *mem, Int len);
 void Memory_Teardown(void *arg);
 
 
+/* Assertions */
+
 #define Assert(expr) \
-    do { \
-        if (!(expr)) { \
-            Panic(S("assertion \"%s\" failed: function %s, file \"%s\", line %d"), \
-                  "expr", S(__func__), S(__FILE__), __LINE__); \
-        } \
-    } while (0)
+    Assert_(!(expr) == False, S(#expr), S(__func__), S(__FILE__), __LINE__)
+
+void Assert_(Bool test, String *expr, String *func, String *file, Int line);
 
 #define TODO() \
     Panic(S("not implemented: function %s, file \"%s\", line %d"), \
