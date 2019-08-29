@@ -1,5 +1,5 @@
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef PRELUDE_ARRAY_H
+#define PRELUDE_ARRAY_H
 
 #define Array(T) T ## Array
 #define Array_Member(T, M) T ## Array_ ## M
@@ -10,17 +10,15 @@
         Int len; \
         Int cap; \
     } Array(T); \
-    void Array_Member(T, Setup)(Array(T) *x); \
-    void Array_Member(T, Teardown)(void *arg); \
+    void Array_Member(T, Drop)(void *arg); \
     void Array_Member(T, Grow)(Array(T) *x, Int buffer);
+
+#define Array_Init(T) (Array(T)){NULL, 0, 0}
 
 Int Array_NextCap(Int elt, Int cap, Int diff);
 
 #define Implement_Array(T) \
-    void Array_Member(T, Setup)(Array(T) *x) { \
-        *x = (Array(T)){0}; \
-    } \
-    void Array_Member(T, Teardown)(void *arg) { \
+    void Array_Member(T, Drop)(void *arg) { \
         Array(T) *x = arg; \
         Free(x->items, x->cap * SizeOf(T)); \
     } \
@@ -37,8 +35,7 @@ Int Array_NextCap(Int elt, Int cap, Int diff);
         x->cap = cap1; \
     }
 
-
 Define_Array(Byte)
 Define_Array(Bytes)
 
-#endif /* ARRAY_H */
+#endif /* PRELUDE_ARRAY_H */

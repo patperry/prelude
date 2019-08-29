@@ -7,9 +7,9 @@
 typedef struct StringBuilder {
     BytesBuilder bytes;
 } StringBuilder;
+#define StringBuilder_Init (StringBuilder){BytesBuilder_Init}
 
-void StringBuilder_Setup(StringBuilder *b);
-void StringBuilder_Teardown(void *arg);
+void StringBuilder_Drop(void *arg);
 void StringBuilder_WriteChar(StringBuilder *b, Char c);
 void StringBuilder_WriteInt(StringBuilder *b, Int x);
 void StringBuilder_WriteString(StringBuilder *b, String *s);
@@ -17,7 +17,7 @@ void StringBuilder_WriteFormat(StringBuilder *b, String *fmt, ...);
 void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
                                       va_list ap);
 
-void String_SetupWithBuilder(String *s, StringBuilder *b);
+void StringBuilder_ToString(StringBuilder *b, String *s);
 
 
 typedef struct StringView {

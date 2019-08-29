@@ -16,8 +16,8 @@ typedef struct Test {
     void (*func)(void);
 } Test;
 
-void Test_Setup(Test *t, TestType type, String *name, void (*func)(void));
-void Test_Teardown(void *arg);
+void Test_New(Test *t, TestType type, String *name, void (*func)(void));
+void Test_Drop(void *arg);
 Bool Test_Run(Test *t);
 
 Define_Array(Test)
@@ -29,8 +29,8 @@ typedef struct TestGroup {
 
 Define_Array(TestGroup)
 
-void TestGroup_Setup(TestGroup *g, String *name);
-void TestGroup_Teardown(void *arg);
+void TestGroup_New(TestGroup *g, String *name);
+void TestGroup_Drop(void *arg);
 void TestGroup_Property(TestGroup *g, String *name, void (*prop)(void));
 Bool TestGroup_Run(TestGroup *g);
 
@@ -38,14 +38,15 @@ typedef struct TestSuite {
     TestGroupArray groups;
 } TestSuite;
 
-void TestSuite_Setup(TestSuite *s);
-void TestSuite_Teardown(void *arg);
+#define TestSuite_Init (TestSuite){Array_Init(TestGroup)}
+
+void TestSuite_Drop(void *arg);
 Int TestSuite_Group(TestSuite *s, String *name);
 void TestSuite_Property(TestSuite *s, Int group, String *name,
                         void (*prop)(void));
 Bool TestSuite_Run(TestSuite *s);
 
-String *Test_GenString(void);
+void Test_GenString(String *s);
 
 int Test_Main(int argc, const char **argv, TestSuite *suite);
 

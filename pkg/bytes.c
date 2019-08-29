@@ -1,13 +1,13 @@
 #include <string.h>
 #include "prelude/bytes.h"
 
-void Bytes_SetupWithCopy(Bytes *b, Bytes *other) {
+void Bytes_FromCopy(Bytes *b, Bytes *other) {
     b->ptr = Alloc(other->len);
     b->len = other->len;
     memcpy(b->ptr, other->ptr, b->len);
 }
 
-void Bytes_Teardown(void *arg) {
+void Bytes_Drop(void *arg) {
     Bytes *b = arg;
     Free(b->ptr, b->len);
 }
@@ -75,11 +75,7 @@ void Bytes_Split(Bytes *b, Bytes *sep, BytesView *head, BytesView *tail) {
     tail->bytes = (Bytes){};
 }
 
-void BytesBuilder_Setup(BytesBuilder *b) {
-    *b = (BytesBuilder){};
-}
-
-void BytesBuilder_Teardown(void *arg) {
+void BytesBuilder_Drop(void *arg) {
     BytesBuilder *b = arg;
     ByteArray_Teardown(&b->buf);
 }
@@ -89,15 +85,15 @@ void BytesBuilder_WriteByte(BytesBuilder *b, Byte x) {
     b->buf.items[b->buf.len++] = x;
 }
 
-void BytesBuilder_WriteBytes(BytesBuilder *b, Bytes *xs) {
-    Int n = xs->len;
+void BytesBuilder_WriteBytes(BytesBuilder *b, Bytes *s) {
+    Int n = s->len;
     ByteArray_Grow(&b->buf, n);
-    memcpy(b->buf.items + b->buf.len, xs->ptr, n);
+    memcpy(b->buf.items + b->buf.len, s->ptr, n);
     b->buf.len += n;
 }
 
-void Bytes_SetupWithBuilder(Bytes *xs, BytesBuilder *b) {
-    xs->ptr = Realloc(b->buf.items, b->buf.cap, b->buf.len);
-    xs->len = b->buf.len;
-    b->buf = (ByteArray){};
+void BytesBuilder_ToBytes(BytesBuilder *b, Bytes *s) {
+    s->ptr = Realloc(b->buf.items, b->buf.cap, b->buf.len);
+    s->len = b->buf.len;
+    *b = BytesBuilder_Init;
 }

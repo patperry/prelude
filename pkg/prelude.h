@@ -25,11 +25,12 @@ typedef struct Bytes {
     Byte *ptr;
     Int len;
 } Bytes;
+#define Bytes_Init (Bytes){NULL, 0}
 
 Bytes *B(const char *str);
 
-void Bytes_SetupWithCopy(Bytes *b, Bytes *other);
-void Bytes_Teardown(void *arg);
+void Bytes_FromCopy(Bytes *b, Bytes *other);
+void Bytes_Drop(void *arg);
 
 Bool Bytes_Some(Bytes *b);
 Bool Bytes_None(Bytes *b);
@@ -42,12 +43,14 @@ typedef struct String {
     Bytes bytes;
 } String;
 
+#define String_Init (String){Bytes_Init}
+
 String *S(const char *str);
 
-void String_Setup(String *s, String *fmt, ...);
-void String_SetupWithArgList(String *s, String *fmt, va_list ap);
-void String_SetupWithCopy(String *s, String *other);
-void String_Teardown(void *arg);
+//void String_Setup(String *s, String *fmt, ...);
+//void String_SetupWithArgList(String *s, String *fmt, va_list ap);
+void String_FromCopy(String *s, String *other);
+void String_Drop(void *arg);
 
 Bool String_Some(String *s);
 Bool String_None(String *s);
@@ -58,9 +61,9 @@ typedef struct Error {
     String string;
 } Error;
 
-void Error_Setup(Error *e, String *fmt, ...);
-void Error_SetupWithArgList(Error *e, String *fmt, va_list ap);
-void Error_Teardown(void *arg);
+#define Error_Init (Error){String_Init}
+
+void Error_Drop(void *arg);
 
 Bool Error_Some(Error *e);
 Bool Error_None(Error *e);

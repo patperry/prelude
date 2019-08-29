@@ -9,7 +9,7 @@ void Assert_(Bool test, String *expr, String *func, String *file, Int line) {
 
 void Assert_ErrorNone_(Error *err, String *func, String *file, Int line) {
     if (Error_Some(err)) {
-        Error_Teardown(err);
+        Error_Drop(err);
         Panic(S("unexpected error: function %s, file \"%s\", line %d"),
               func, file, line);
     }

@@ -7,13 +7,13 @@
 typedef struct BytesBuilder {
     ByteArray buf;
 } BytesBuilder;
+#define BytesBuilder_Init (BytesBuilder){Array_Init(Byte)}
 
-void BytesBuilder_Setup(BytesBuilder *b);
-void BytesBuilder_Teardown(void *arg);
+void BytesBuilder_Drop(void *arg);
 void BytesBuilder_WriteByte(BytesBuilder *b, Byte x);
-void BytesBuilder_WriteBytes(BytesBuilder *b, Bytes *xs);
+void BytesBuilder_WriteBytes(BytesBuilder *b, Bytes *s);
 
-void Bytes_SetupWithBuilder(Bytes *xs, BytesBuilder *b);
+void BytesBuilder_ToBytes(BytesBuilder *b, Bytes *s);
 
 
 typedef struct BytesView {

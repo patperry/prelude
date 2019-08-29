@@ -99,15 +99,14 @@ typedef enum LogType {
 } LogType;
 
 static void Log(LogType type, String *fmt, va_list ap) {
-    StringBuilder b;
-    StringBuilder_Setup(&b);
-    Defer(StringBuilder_Teardown, &b);
+    StringBuilder b = StringBuilder_Init;
+    Defer(StringBuilder_Drop, &b);
 
     StringBuilder_WriteFormatArgList(&b, fmt, ap);
 
     String s;
-    String_SetupWithBuilder(&s, &b);
-    Defer(String_Teardown, &s);
+    StringBuilder_ToString(&b, &s); // TODO: use shared builder for all logs
+    Defer(String_Drop, &s);
 
     if (type == Log_Info) {
         fprintf(stdout, "%.*s\n", s.bytes.len, s.bytes.ptr);
@@ -143,15 +142,20 @@ void Info(String *fmt, ...) {
 
 void Panic(String *fmt, ...) {
     va_list ap;
-
     va_start(ap, fmt);
+
     Error err;
-    Error_SetupWithArgList(&err, fmt, ap);
-    va_end(ap);
+    StringBuilder b = StringBuilder_Init;
+    Defer(StringBuilder_Drop, &b);
+    StringBuilder_WriteFormatArgList(&b, fmt, ap);
+    StringBuilder_ToString(&b, &err.string);
 
     fprintf(stderr, "panic: %.*s\n", (int)err.string.bytes.len,
             (const char *)err.string.bytes.ptr);
+    // TODO persist error
+    // TODO memory leak (err)
 
+    va_end(ap);
     abort();
 }
 

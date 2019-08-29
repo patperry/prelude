@@ -5,18 +5,13 @@
 Implement_Array(Test)
 Implement_Array(TestGroup)
 
-void TestSuite_Setup(TestSuite *s) {
-    *s = (TestSuite){};
-    TestGroupArray_Setup(&s->groups);
-}
-
-void TestSuite_Teardown(void *arg) {
+void TestSuite_Drop(void *arg) {
     TestSuite *s = arg;
     Int n = s->groups.len;
     while (n-- > 0) {
-        TestGroup_Teardown(&s->groups.items[n]);
+        TestGroup_Drop(&s->groups.items[n]);
     }
-    TestGroupArray_Teardown(&s->groups);
+    TestGroupArray_Drop(&s->groups);
 }
 
 Bool TestSuite_Run(TestSuite *s) {
@@ -39,7 +34,7 @@ Int TestSuite_Group(TestSuite *s, String *name) {
         }
     }
     TestGroupArray_Grow(&s->groups, 1);
-    TestGroup_Setup(&s->groups.items[n], name);
+    TestGroup_New(&s->groups.items[n], name);
     s->groups.len = n + 1;
     return n;
 }
@@ -49,23 +44,23 @@ void TestSuite_Property(TestSuite *s, Int group, String *name,
     TestGroup_Property(&s->groups.items[group], name, prop);
 }
 
-void TestGroup_Setup(TestGroup *g, String *name) {
+void TestGroup_New(TestGroup *g, String *name) {
     *g = (TestGroup){};
     Open();
-    String_SetupWithCopy(&g->name, name);
-    Trap(String_Teardown, &g->name);
-    TestArray_Setup(&g->tests);
+    String_FromCopy(&g->name, name);
+    Trap(String_Drop, &g->name);
+    g->tests = Array_Init(Test);
     Close();
 }
 
-void TestGroup_Teardown(void *arg) {
+void TestGroup_Drop(void *arg) {
     TestGroup *g = arg;
     Int n = g->tests.len;
     while (n-- > 0) {
-        Test_Teardown(&g->tests.items[n]);
+        Test_Drop(&g->tests.items[n]);
     }
-    TestArray_Teardown(&g->tests);
-    String_Teardown(&g->name);
+    TestArray_Drop(&g->tests);
+    String_Drop(&g->name);
 }
 
 Bool TestGroup_Run(TestGroup *g) {
@@ -84,7 +79,7 @@ static void TestGroup_Add(TestGroup *g, TestType type, String *name,
                           void (*func)(void)) {
     TestArray_Grow(&g->tests, 1);
     Int n = g->tests.len;
-    Test_Setup(&g->tests.items[n], type, name, func);
+    Test_New(&g->tests.items[n], type, name, func);
     g->tests.len = n + 1;
 }
 
@@ -92,16 +87,16 @@ void TestGroup_Property(TestGroup *g, String *name, void (*prop)(void)) {
     TestGroup_Add(g, Test_Property, name, prop);
 }
 
-void Test_Setup(Test *t, TestType type, String *name, void (*func)(void)) {
+void Test_New(Test *t, TestType type, String *name, void (*func)(void)) {
     *t = (Test){};
-    String_SetupWithCopy(&t->name, name);
+    String_FromCopy(&t->name, name);
     t->type = type;
     t->func = func;
 }
 
-void Test_Teardown(void *arg) {
+void Test_Drop(void *arg) {
     Test *t = arg;
-    String_Teardown(&t->name);
+    String_Drop(&t->name);
 }
 
 Bool Test_Run(Test *t) {

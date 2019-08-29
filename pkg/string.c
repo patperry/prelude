@@ -2,29 +2,13 @@
 #include <string.h>
 #include "prelude/string.h"
 
-void String_Setup(String *s, String *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    String_SetupWithArgList(s, fmt, ap);
-    va_end(ap);
+void String_FromCopy(String *s, String *other) {
+    Bytes_FromCopy(&s->bytes, &other->bytes);
 }
 
-void String_SetupWithArgList(String *s, String *fmt, va_list ap) {
-    StringBuilder b;
-    StringBuilder_Setup(&b);
-    Defer(StringBuilder_Teardown, &b);
-
-    StringBuilder_WriteFormatArgList(&b, fmt, ap);
-    String_SetupWithBuilder(s, &b);
-}
-
-void String_SetupWithCopy(String *s, String *other) {
-    Bytes_SetupWithCopy(&s->bytes, &other->bytes);
-}
-
-void String_Teardown(void *arg) {
+void String_Drop(void *arg) {
     String *s = arg;
-    Bytes_Teardown(&s->bytes);
+    Bytes_Drop(&s->bytes);
 }
 
 Bool String_None(String *s) {
@@ -66,13 +50,9 @@ void String_Split(String *s, String *sep, StringView *head, StringView *tail) {
     tail->string.bytes = xtail.bytes;
 }
 
-void StringBuilder_Setup(StringBuilder *b) {
-    BytesBuilder_Setup(&b->bytes);
-}
-
-void StringBuilder_Teardown(void *arg) {
+void StringBuilder_Drop(void *arg) {
     StringBuilder *b = arg;
-    BytesBuilder_Teardown(&b->bytes);
+    BytesBuilder_Drop(&b->bytes);
 }
 
 void StringBuilder_WriteChar(StringBuilder *b, Char c) {
@@ -142,6 +122,6 @@ void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
     }
 }
 
-void String_SetupWithBuilder(String *s, StringBuilder *b) {
-    Bytes_SetupWithBuilder(&s->bytes, &b->bytes);
+void StringBuilder_ToString(StringBuilder *b, String *s) {
+    BytesBuilder_ToBytes(&b->bytes, &s->bytes);
 }
