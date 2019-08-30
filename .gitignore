@@ -1,4 +1,5 @@
 *.a
 *.o
 /bin/
+/test/test_assert
 /test/test_string

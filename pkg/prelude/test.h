@@ -1,5 +1,5 @@
-#ifndef TEST_H
-#define TEST_H
+#ifndef PRELUDE_TEST_H
+#define PRELUDE_TEST_H
 
 #include "prelude.h"
 #include "prelude/array.h"
@@ -64,4 +64,4 @@ Bool TestSuite_Run(TestSuite *s);
 
 int Test_Main(int argc, const char **argv, TestSuite *suite);
 
-#endif /* TEST_H */
+#endif /* PRELUDE_TEST_H */

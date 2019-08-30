@@ -1,5 +1,15 @@
 #include "prelude/assert.h"
 
+void Assert_Panic_(void (*func)(void *udata), void *udata,
+                   String *expr, String *funcs, String *file, Int line)
+{
+    // TODO
+    (void)func;
+    (void)udata;
+    Panic(S("expected panic from %s: function %s, file \"%s\", line %d"),
+          expr, funcs, file, line);
+}
+
 void Assert_(Bool test, String *expr, String *func, String *file, Int line) {
     if (test != True) {
          Panic(S("assertion \"%s\" failed: function %s, file \"%s\", line %d"),

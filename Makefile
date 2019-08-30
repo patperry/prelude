@@ -13,7 +13,7 @@ PACKAGE_O = pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
 			pkg/string.o pkg/test.o
 
 ALL_O = $(PACKAGE_O) cmd/hello.o
-ALL_T = $(PACKAGE_A) bin/hello test/test_string
+ALL_T = $(PACKAGE_A) bin/hello test/test_assert test/test_string
 ALL_A = $(PACKAGE_A)
 
 .PHONY: all
@@ -26,8 +26,11 @@ $(PACKAGE_A): $(PACKAGE_O)
 bin/hello: cmd/hello.o $(PACKAGE_A)
 	$(MKDIR_P) bin && $(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+test/test_assert: test/test_assert.o $(PACKAGE_A)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
 test/test_string: test/test_string.o $(PACKAGE_A)
-	$(MKDIR_P) bin && $(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 pkg/%.o : pkg/%.c pkg/prelude.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
@@ -37,5 +40,6 @@ clean:
 	$(RM) $(ALL_T) $(ALL_O)
 
 .PHONY: check
-check: test/test_string
+check: test/test_assert test/test_string
+	test/test_assert
 	test/test_string
