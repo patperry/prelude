@@ -5,6 +5,7 @@
 Implement_Array(Test)
 Implement_Array(TestGroup)
 
+
 void TestSuite_Drop(void *arg) {
     TestSuite *s = arg;
     Int n = s->groups.len;
@@ -39,9 +40,14 @@ Int TestSuite_Group(TestSuite *s, String *name) {
     return n;
 }
 
-void TestSuite_Property(TestSuite *s, Int group, String *name,
-                        void (*prop)(Int n)) {
-    TestGroup_Property(&s->groups.items[group], name, prop);
+void TestSuite_AddUnit(TestSuite *s, Int group, String *name,
+                       void (*unit)(void)) {
+    TestGroup_AddUnit(&s->groups.items[group], name, unit);
+}
+
+void TestSuite_AddProperty(TestSuite *s, Int group, String *name,
+                           void (*prop)(Int n)) {
+    TestGroup_AddProperty(&s->groups.items[group], name, prop);
 }
 
 void TestGroup_New(TestGroup *g, String *name) {
@@ -75,11 +81,28 @@ Bool TestGroup_Run(TestGroup *g) {
     return succ;
 }
 
-void TestGroup_Property(TestGroup *g, String *name, void (*prop)(Int n)) {
+static int testGroup_GrowTests(TestGroup *g) {
     TestArray_Grow(&g->tests, 1);
     Int n = g->tests.len;
-    Test_NewProperty(&g->tests.items[n], name, prop);
+    g->tests.items[n] = Test_Init;
     g->tests.len = n + 1;
+    return n;
+}
+
+void TestGroup_AddUnit(TestGroup *g, String *name, void (*unit)(void)) {
+    Int i = testGroup_GrowTests(g);
+    Test_NewUnit(&g->tests.items[i], name, unit);
+}
+
+void TestGroup_AddProperty(TestGroup *g, String *name, void (*prop)(Int n)) {
+    Int i = testGroup_GrowTests(g);
+    Test_NewProperty(&g->tests.items[i], name, prop);
+}
+
+void Test_NewUnit(Test *t, String *name, void (*unit)(void)) {
+    t->type = Test_Unit;
+    String_FromCopy(&t->name, name);
+    t->func.unit = unit;
 }
 
 void Test_NewProperty(Test *t, String *name, void (*prop)(Int n)) {
@@ -97,6 +120,9 @@ Bool Test_Run(Test *t) {
     Debug(S("running test \"%s\""), &t->name);
     switch (t->type) {
     case Test_None:
+        break;
+    case Test_Unit:
+        (t->func.unit)();
         break;
     case Test_Property:
         (t->func.prop)(10); // TODO fix n;

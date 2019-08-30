@@ -45,13 +45,13 @@ int main(int argc, const char **argv) {
     Initialize();
     Open();
 
-    TestSuite suite = TestSuite_Init;
-    Defer(TestSuite_Drop, &suite);
+    TestSuite s = TestSuite_Init;
+    Defer(TestSuite_Drop, &s);
 
-    Int g = TestSuite_Group(&suite, S("string"));
-    TestSuite_Property(&suite, g, S("view utf8 bytes"), prop_view_utf8_bytes);
+    Int g = TestSuite_Group(&s, S("string"));
+    TestSuite_AddProperty(&s, g, S("view utf8 bytes"), prop_view_utf8_bytes);
 
-    int ret = Test_Main(argc, argv, &suite);
+    int ret = Test_Main(argc, argv, &s);
     Close();
     Finalize();
     return ret;
