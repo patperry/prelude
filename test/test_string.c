@@ -46,7 +46,6 @@ static void prop_view_utf8_bytes(Int n) {
     Close();
 }
 
-
 int main(int argc, const char **argv) {
     Initialize();
     Open();
