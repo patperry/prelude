@@ -24,16 +24,19 @@ static Bytes *invalidUtf8(Bytes *b, Int n) {
 }
 */
 
-static void prop_view_utf8_bytes(void) {
+static void prop_view_utf8_bytes(Int n) {
     Open();
+
     String s;
-    Test_GenString(&s);
+    String_Gen(&s, n);
     Defer(String_Drop, &s);
 
     Error err = Error_Init;
     StringView v;
     String_ViewBytes(&v, &s.bytes, &err);
+
     Assert_ErrorNone(&err);
+
     Close();
 }
 

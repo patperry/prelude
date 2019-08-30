@@ -29,4 +29,6 @@ void String_ViewBytes(StringView *v, Bytes *b, Error *err);
 Bool String_UnCons(String *s, Char *head, StringView *tail);
 void String_Split(String *s, String *sep, StringView *head, StringView *tail);
 
+void String_Gen(String *s, Int n);
+
 #endif /* PRELUDE_STRING_H */

@@ -40,7 +40,7 @@ Int TestSuite_Group(TestSuite *s, String *name) {
 }
 
 void TestSuite_Property(TestSuite *s, Int group, String *name,
-                        void (*prop)(void)) {
+                        void (*prop)(Int n)) {
     TestGroup_Property(&s->groups.items[group], name, prop);
 }
 
@@ -75,23 +75,17 @@ Bool TestGroup_Run(TestGroup *g) {
     return succ;
 }
 
-static void TestGroup_Add(TestGroup *g, TestType type, String *name,
-                          void (*func)(void)) {
+void TestGroup_Property(TestGroup *g, String *name, void (*prop)(Int n)) {
     TestArray_Grow(&g->tests, 1);
     Int n = g->tests.len;
-    Test_New(&g->tests.items[n], type, name, func);
+    Test_NewProperty(&g->tests.items[n], name, prop);
     g->tests.len = n + 1;
 }
 
-void TestGroup_Property(TestGroup *g, String *name, void (*prop)(void)) {
-    TestGroup_Add(g, Test_Property, name, prop);
-}
-
-void Test_New(Test *t, TestType type, String *name, void (*func)(void)) {
-    *t = (Test){};
+void Test_NewProperty(Test *t, String *name, void (*prop)(Int n)) {
+    t->type = Test_Property;
     String_FromCopy(&t->name, name);
-    t->type = type;
-    t->func = func;
+    t->func.prop = prop;
 }
 
 void Test_Drop(void *arg) {
@@ -101,13 +95,14 @@ void Test_Drop(void *arg) {
 
 Bool Test_Run(Test *t) {
     Debug(S("running test \"%s\""), &t->name);
-    (t->func)();
+    switch (t->type) {
+    case Test_None:
+        break;
+    case Test_Property:
+        (t->func.prop)(10); // TODO fix n;
+        break;
+    }
     return True;
-}
-
-String *Test_GenString(void) {
-    // TODO: better
-    return S("hello world");
 }
 
 int Test_Main(int argc, const char **argv, TestSuite *suite) {

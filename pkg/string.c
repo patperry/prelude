@@ -50,6 +50,11 @@ void String_Split(String *s, String *sep, StringView *head, StringView *tail) {
     tail->string.bytes = xtail.bytes;
 }
 
+void String_Gen(String *s, Int n) {
+    (void)n;
+    String_FromCopy(s, S("hello string")); // TODO: better
+}
+
 void StringBuilder_Drop(void *arg) {
     StringBuilder *b = arg;
     BytesBuilder_Drop(&b->bytes);

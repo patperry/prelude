@@ -75,9 +75,14 @@ void Bytes_Split(Bytes *b, Bytes *sep, BytesView *head, BytesView *tail) {
     tail->bytes = (Bytes){};
 }
 
+void Bytes_Gen(Bytes *b, Int n) {
+    (void)n; // TODO: better
+    Bytes_FromCopy(b, B("hello bytes"));
+}
+
 void BytesBuilder_Drop(void *arg) {
     BytesBuilder *b = arg;
-    ByteArray_Teardown(&b->buf);
+    ByteArray_Drop(&b->buf);
 }
 
 void BytesBuilder_WriteByte(BytesBuilder *b, Byte x) {

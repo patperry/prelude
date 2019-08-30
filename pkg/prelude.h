@@ -36,6 +36,7 @@ Bool Bytes_Some(Bytes *b);
 Bool Bytes_None(Bytes *b);
 Bool Bytes_Eq(Bytes *b1, Bytes *b2);
 
+
 typedef Int Char;
 #define Char_None (Char)0
 
@@ -47,8 +48,6 @@ typedef struct String {
 
 String *S(const char *str);
 
-//void String_Setup(String *s, String *fmt, ...);
-//void String_SetupWithArgList(String *s, String *fmt, va_list ap);
 void String_FromCopy(String *s, String *other);
 void String_Drop(void *arg);
 
