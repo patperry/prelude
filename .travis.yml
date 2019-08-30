@@ -11,7 +11,7 @@ install:
 
 script:
   - make check || exit 1
-  - gcov -o src src/*.c
+  - gcov -o pkg pkg/*.c
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -X gcov
