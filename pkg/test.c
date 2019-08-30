@@ -70,7 +70,8 @@ void TestGroup_Drop(void *arg) {
 }
 
 Bool TestGroup_Run(TestGroup *g) {
-   Bool succ = True;
+    Debug(S("running test group \"%s\""), &g->name);
+    Bool succ = True;
     Int i, n = g->tests.len;
     for (i = 0; i < n; i++) {
         Bool t = Test_Run(&g->tests.items[i]);
