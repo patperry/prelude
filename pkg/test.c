@@ -51,8 +51,8 @@ void TestSuite_AddProperty(TestSuite *s, Int group, String *name,
 }
 
 void TestGroup_New(TestGroup *g, String *name) {
-    *g = (TestGroup){};
     Open();
+    *g = TestGroup_Init;
     String_FromCopy(&g->name, name);
     Trap(String_Drop, &g->name);
     g->tests = Array_Init(Test);

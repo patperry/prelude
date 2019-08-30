@@ -122,7 +122,7 @@ void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
                 Panic(S("unrecognized format %c"), fmtc);
             }
         } else {
-            left.string = (String){};
+            left.string = String_Init;
         }
     }
 }

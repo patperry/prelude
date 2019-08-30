@@ -45,7 +45,7 @@ Bool Bytes_UnCons(Bytes *b, Byte *head, BytesView *tail) {
 
 void Bytes_Split(Bytes *b, Bytes *sep, BytesView *head, BytesView *tail) {
     if (Bytes_None(sep)) {
-        head->bytes = (Bytes){};
+        head->bytes = Bytes_Init;
         tail->bytes = *b;
         return;
     }
@@ -72,7 +72,7 @@ void Bytes_Split(Bytes *b, Bytes *sep, BytesView *head, BytesView *tail) {
     }
 
     head->bytes = *b;
-    tail->bytes = (Bytes){};
+    tail->bytes = Bytes_Init;
 }
 
 void Bytes_Gen(Bytes *b, Int n) {

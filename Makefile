@@ -4,7 +4,7 @@ MKDIR_P = mkdir -p
 RANLIB = ranlib
 
 LIBS += -lm `pkg-config --libs openssl`
-CFLAGS += -Weverything -pedantic -Werror -Wno-padded -Wno-missing-noreturn -Wno-cast-qual -Wno-gnu-empty-initializer -g `pkg-config --cflags openssl`
+CFLAGS += -Weverything -pedantic -Werror -Wno-padded -g `pkg-config --cflags openssl`
 CPPFLAGS += -Ipkg
 LDFLAGS += -g
 

@@ -22,17 +22,20 @@ typedef struct Test {
 
 #define Test_Init (Test){Test_None, String_Init, {NULL}}
 
+Define_Array(Test)
+
 void Test_NewProperty(Test *t, String *name, void (*prop)(Int n));
 void Test_NewUnit(Test *t, String *name, void (*unit)(void));
 void Test_Drop(void *arg);
 Bool Test_Run(Test *t);
 
-Define_Array(Test)
 
 typedef struct TestGroup {
     String name;
     TestArray tests;
 } TestGroup;
+
+#define TestGroup_Init (TestGroup){String_Init, Array_Init(Test)}
 
 Define_Array(TestGroup)
 

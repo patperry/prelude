@@ -189,7 +189,10 @@ Bytes *B(const char *str) {
     }
 
     Bytes b = {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
         .ptr = (Byte *)str,
+#pragma GCC diagnostic pop
         .len = (Int)strlen(str)
     };
     return LiteralsArray_Push(&runtime.literals, &b);
