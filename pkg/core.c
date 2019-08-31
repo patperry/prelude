@@ -10,25 +10,15 @@
 // Don't use array for literals, to avoid circular dependency
 
 enum {
-    Literals_Cap = 1024
+    Literals_Cap = 255
 };
 
 typedef struct Literals {
-    Bytes *items; // never reallocate, so literals have stable pointers
     Int len;
-    Int cap;
+    Bytes items[Literals_Cap];
 } Literals;
 
-static void Literals_Setup(Literals *l) {
-    l->len = 0;
-    l->cap = Literals_Cap;
-    l->items = Alloc(l->cap * SizeOf(*l->items));
-}
-
-static void Literals_Teardown(void *arg) {
-    Literals *l = arg;
-    Free(l->items, l->cap * SizeOf(*l->items));
-}
+#define Literals_Init (Literals){0}
 
 typedef struct LiteralsArray {
     Literals *items;
@@ -36,30 +26,28 @@ typedef struct LiteralsArray {
     Int cap;
 } LiteralsArray;
 
-static void LiteralsArray_Setup(LiteralsArray *a) {
-    a->cap = 0;
-    a->len = 0;
-    a->items = NULL;
-}
+#define LiteralsArray_Init (LiteralsArray){NULL, 0, 0}
 
-static void LiteralsArray_Teardown(void *arg) {
+typedef struct Runtime {
+    LiteralsArray literals;
+} Runtime;
+
+static Runtime runtime;
+
+static void LiteralsArray_Drop(void *arg) {
     LiteralsArray *a = arg;
-    Int n = a->len;
-    while (n-- > 0) {
-        Literals_Teardown(&a->items[n]);
-    }
     Free(a->items, a->cap * SizeOf(*a->items));
 }
 
 static void LiteralsArray_Grow(LiteralsArray *a) {
     Int n = a->len;
-    if (n == 0 || a->items[n - 1].len == a->items[n - 1].cap) {
+    if (n == 0 || a->items[n - 1].len == Literals_Cap) {
         if (a->len == a->cap) {
             a->items = Realloc(a->items, n * SizeOf(*a->items),
                                (n + 1) * SizeOf(*a->items));
             a->cap = n + 1;
         }
-        Literals_Setup(&a->items[n]);
+        a->items[n] = Literals_Init;
         a->len = n + 1;
     }
 }
@@ -72,18 +60,13 @@ static Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
     return item;
 }
 
-typedef struct Runtime {
-    LiteralsArray literals;
-} Runtime;
-
-static Runtime runtime;
 
 void Initialize(void) {
-    LiteralsArray_Setup(&runtime.literals);
+    runtime.literals = LiteralsArray_Init;
 }
 
 void Finalize(void) {
-    LiteralsArray_Teardown(&runtime.literals);
+    LiteralsArray_Drop(&runtime.literals);
 }
 
 void Open(void) {
@@ -138,6 +121,12 @@ void Info(String *fmt, ...) {
     va_start(ap, fmt);
     Log(Log_Info, fmt, ap);
     va_end(ap);
+}
+
+void Try(void (*func)(void *arg), void *arg, Error *err) {
+    (void)err;
+    func(arg);
+    // TODO
 }
 
 void Panic(String *fmt, ...) {

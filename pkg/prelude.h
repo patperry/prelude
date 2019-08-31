@@ -76,6 +76,7 @@ void Finalize(void);
 void Open(void);
 void Close(void);
 
+void Try(void (*func)(void *arg), void *arg, Error *err);
 void Panic(String *fmt, ...) __attribute__((noreturn));
 void Defer(void (*func)(void *arg), void *arg);
 void Trap(void (*func)(void *arg), void *arg);

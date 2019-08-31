@@ -3,9 +3,9 @@
 
 #include "prelude.h"
 
-#define Assert_Panic(func, udata) \
-    Assert_Panic_(func, udata, S(#func), S(__func__), S(__FILE__), __LINE__)
-void Assert_Panic_(void (*func)(void *udata), void *udata,
+#define Assert_Panic(func, arg) \
+    Assert_Panic_(func, arg, S(#func), S(__func__), S(__FILE__), __LINE__)
+void Assert_Panic_(void (*func)(void *arg), void *arg,
                    String *expr, String *funcs, String *file, Int line);
 
 #define Assert_ErrorNone(err) \

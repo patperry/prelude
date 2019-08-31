@@ -1,7 +1,7 @@
 #include "prelude/test.h"
 
-static void fail_stringEq(void *udata) {
-    (void)udata;
+static void fail_stringEq(void *arg) {
+    (void)arg;
     Assert_StringEq(S("a"), S("b"));
 }
 
