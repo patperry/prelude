@@ -1,3 +1,4 @@
+#include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,18 +29,48 @@ typedef struct LiteralsArray {
 
 #define LiteralsArray_Init (LiteralsArray){NULL, 0, 0}
 
+static void LiteralsArray_Drop(void *arg);
+static void LiteralsArray_Grow(LiteralsArray *a);
+static Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x);
+
+typedef enum LogType {
+    Log_None = 0,
+    Log_Debug,
+    Log_Info
+} LogType;
+
+static void Log(LogType type, String *fmt, va_list ap);
+
+typedef struct TryPoint {
+    Error *err;
+    jmp_buf env;
+} TryPoint;
+
+#define TryPoint_Init (TryPoint){NULL, {0}}
+
 typedef struct Runtime {
     LiteralsArray literals;
+    TryPoint try;
+    Bool has_try;
 } Runtime;
+
+#define Runtime_Init (Runtime){LiteralsArray_Init, TryPoint_Init, False}
+
+static void Runtime_Drop(void *arg);
 
 static Runtime runtime;
 
-static void LiteralsArray_Drop(void *arg) {
+void Runtime_Drop(void *arg) {
+    Runtime *r = arg;
+    LiteralsArray_Drop(&r->literals);
+}
+
+void LiteralsArray_Drop(void *arg) {
     LiteralsArray *a = arg;
     Free(a->items, a->cap * SizeOf(*a->items));
 }
 
-static void LiteralsArray_Grow(LiteralsArray *a) {
+void LiteralsArray_Grow(LiteralsArray *a) {
     Int n = a->len;
     if (n == 0 || a->items[n - 1].len == Literals_Cap) {
         if (a->len == a->cap) {
@@ -52,7 +83,7 @@ static void LiteralsArray_Grow(LiteralsArray *a) {
     }
 }
 
-static Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
+Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
     LiteralsArray_Grow(a);
     Literals *l = &a->items[a->len - 1];
     Bytes *item = &l->items[l->len++];
@@ -62,11 +93,11 @@ static Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
 
 
 void Initialize(void) {
-    runtime.literals = LiteralsArray_Init;
+    runtime = Runtime_Init;
 }
 
 void Finalize(void) {
-    LiteralsArray_Drop(&runtime.literals);
+    Runtime_Drop(&runtime);
 }
 
 void Open(void) {
@@ -75,77 +106,37 @@ void Open(void) {
 void Close(void) {
 }
 
-typedef enum LogType {
-    Log_None = 0,
-    Log_Debug,
-    Log_Info
-} LogType;
-
-static void Log(LogType type, String *fmt, va_list ap) {
-    StringBuilder b = StringBuilder_Init;
-    Defer(StringBuilder_Drop, &b);
-
-    StringBuilder_WriteFormatArgList(&b, fmt, ap);
-
-    String s;
-    StringBuilder_ToString(&b, &s); // TODO: use shared builder for all logs
-    Defer(String_Drop, &s);
-
-    if (type == Log_Info) {
-        fprintf(stdout, "%.*s\n", s.bytes.len, s.bytes.ptr);
-        fflush(stdout);
-    } else if (type == Log_Debug) {
-        time_t clock;
-        struct tm tm;
-
-        time(&clock);
-        tm = *gmtime(&clock); // TODO: replace with reentrant version
-
-        fprintf(stderr, "%d-%02d-%02d %02d:%02d:%02d [DEBUG] %.*s\n",
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                tm.tm_hour, tm.tm_min, tm.tm_sec,
-                s.bytes.len, s.bytes.ptr);
-        fflush(stderr);
-    }
-}
-
-void Debug(String *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    Log(Log_Debug, fmt, ap);
-    va_end(ap);
-}
-
-void Info(String *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    Log(Log_Info, fmt, ap);
-    va_end(ap);
-}
-
 void Try(void (*func)(void *arg), void *arg, Error *err) {
-    (void)err;
-    func(arg);
-    // TODO
+    Assert(!runtime.has_try); // TODO: nested try not implemented
+    runtime.try.err = err;
+    runtime.has_try = True;
+    if (!setjmp(runtime.try.env)) {
+        func(arg);
+    }
+    runtime.has_try = False;
 }
 
 void Panic(String *fmt, ...) {
+    // TODO: careful error handling
     va_list ap;
     va_start(ap, fmt);
 
-    Error err;
     StringBuilder b = StringBuilder_Init;
     Defer(StringBuilder_Drop, &b);
     StringBuilder_WriteFormatArgList(&b, fmt, ap);
-    StringBuilder_ToString(&b, &err.string);
-
-    fprintf(stderr, "panic: %.*s\n", (int)err.string.bytes.len,
-            (const char *)err.string.bytes.ptr);
-    // TODO persist error
-    // TODO memory leak (err)
-
     va_end(ap);
-    abort();
+
+    if (runtime.has_try == True) {
+        StringBuilder_ToString(&b, &runtime.try.err->string);
+        longjmp(runtime.try.env, 1);
+    } else {
+        String msg;
+        StringBuilder_ToString(&b, &msg);
+        fprintf(stderr, "panic: %.*s\n", (int)msg.bytes.len,
+                (const char *)msg.bytes.ptr);
+        String_Drop(&msg);
+        abort();
+    }
 }
 
 void Defer(void (*func)(void *arg), void *arg) {
@@ -217,4 +208,46 @@ void *Realloc(void *ptr, Int from, Int to) {
     }
 
     return ptr;
+}
+
+void Log(LogType type, String *fmt, va_list ap) {
+    StringBuilder b = StringBuilder_Init;
+    Defer(StringBuilder_Drop, &b);
+
+    StringBuilder_WriteFormatArgList(&b, fmt, ap);
+
+    String s;
+    StringBuilder_ToString(&b, &s); // TODO: use shared builder for all logs
+    Defer(String_Drop, &s);
+
+    if (type == Log_Info) {
+        fprintf(stdout, "%.*s\n", s.bytes.len, s.bytes.ptr);
+        fflush(stdout);
+    } else if (type == Log_Debug) {
+        time_t clock;
+        struct tm tm;
+
+        time(&clock);
+        tm = *gmtime(&clock); // TODO: replace with reentrant version
+
+        fprintf(stderr, "%d-%02d-%02d %02d:%02d:%02d [DEBUG] %.*s\n",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec,
+                s.bytes.len, s.bytes.ptr);
+        fflush(stderr);
+    }
+}
+
+void Debug(String *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    Log(Log_Debug, fmt, ap);
+    va_end(ap);
+}
+
+void Info(String *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    Log(Log_Info, fmt, ap);
+    va_end(ap);
 }
