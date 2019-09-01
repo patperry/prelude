@@ -51,12 +51,24 @@ typedef struct TryPoint {
 Define_Array(TryPoint)
 Implement_Array(TryPoint)
 
+typedef struct {
+    Int max;
+    Int cur;
+} MemoryStats;
+
+#define MemoryStats_Init (MemoryStats){0, 0}
+
 typedef struct Runtime {
     LiteralsArray literals;
     TryPointArray tries;
+    MemoryStats memory;
 } Runtime;
 
-#define Runtime_Init (Runtime){LiteralsArray_Init, Array_Init(TryPoint)}
+#define Runtime_Init (Runtime){\
+    LiteralsArray_Init, \
+    Array_Init(TryPoint), \
+    MemoryStats_Init \
+}
 
 static void Runtime_Drop(void *arg);
 
@@ -100,6 +112,8 @@ void Initialize(void) {
 }
 
 void Finalize(void) {
+    Debug(S("current memory use: %d bytes"), runtime.memory.cur);
+    Debug(S("maximum memory use: %d bytes"), runtime.memory.max);
     Runtime_Drop(&runtime);
 }
 
@@ -199,9 +213,10 @@ void Free(void *ptr, Int len) {
 }
 
 void *Realloc(void *ptr, Int from, Int to) {
-    (void)from;
+    // TODO: handle negative from, to; can't use Assert because it allocates
 
-    if (to <= 0) {
+    runtime.memory.cur -= from;
+    if (to == 0) {
         free(ptr);
         return NULL;
     }
@@ -210,6 +225,10 @@ void *Realloc(void *ptr, Int from, Int to) {
     if (!ptr) {
         // TODO: avoid allocation on panic
         Panic(S("failed allocating %d bytes"), to);
+    }
+    runtime.memory.cur += to;
+    if (runtime.memory.cur > runtime.memory.max) {
+        runtime.memory.max = runtime.memory.cur;
     }
 
     return ptr;
