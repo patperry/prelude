@@ -107,7 +107,7 @@ void Memory_Teardown(void *arg);
 /* Assertions */
 
 #define Assert(expr) \
-    Assert_(!(expr) == False, S(#expr), S(__func__), S(__FILE__), __LINE__)
+    Assert_((expr) == True, S(#expr), S(__func__), S(__FILE__), __LINE__)
 
 void Assert_(Bool test, String *expr, String *func, String *file, Int line);
 

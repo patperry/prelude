@@ -8,6 +8,11 @@
 void Assert_Panic_(void (*func)(void *arg), void *arg,
                    String *expr, String *funcs, String *file, Int line);
 
+#define Assert_NotPanic(func, arg) \
+    Assert_NotPanic_(func, arg, S(#func), S(__func__), S(__FILE__), __LINE__)
+void Assert_NotPanic_(void (*func)(void *arg), void *arg,
+                      String *expr, String *funcs, String *file, Int line);
+
 #define Assert_ErrorNone(err) \
     Assert_ErrorNone_(err, S(__func__), S(__FILE__), __LINE__)
 void Assert_ErrorNone_(Error *err, String *func, String *file, Int line);

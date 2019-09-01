@@ -48,13 +48,15 @@ typedef struct TryPoint {
 
 #define TryPoint_Init (TryPoint){NULL, {0}}
 
+Define_Array(TryPoint)
+Implement_Array(TryPoint)
+
 typedef struct Runtime {
     LiteralsArray literals;
-    TryPoint try;
-    Bool has_try;
+    TryPointArray tries;
 } Runtime;
 
-#define Runtime_Init (Runtime){LiteralsArray_Init, TryPoint_Init, False}
+#define Runtime_Init (Runtime){LiteralsArray_Init, Array_Init(TryPoint)}
 
 static void Runtime_Drop(void *arg);
 
@@ -62,6 +64,7 @@ static Runtime runtime;
 
 void Runtime_Drop(void *arg) {
     Runtime *r = arg;
+    TryPointArray_Drop(&r->tries);
     LiteralsArray_Drop(&r->literals);
 }
 
@@ -107,13 +110,14 @@ void Close(void) {
 }
 
 void Try(void (*func)(void *arg), void *arg, Error *err) {
-    Assert(!runtime.has_try); // TODO: nested try not implemented
-    runtime.try.err = err;
-    runtime.has_try = True;
-    if (!setjmp(runtime.try.env)) {
+    TryPointArray_Grow(&runtime.tries, 1);
+    Int n = runtime.tries.len;
+    runtime.tries.items[n].err = err;
+    if (!setjmp(runtime.tries.items[n].env)) {
+        runtime.tries.len = n + 1;
         func(arg);
     }
-    runtime.has_try = False;
+    runtime.tries.len = n;
 }
 
 void Panic(String *fmt, ...) {
@@ -126,9 +130,10 @@ void Panic(String *fmt, ...) {
     StringBuilder_WriteFormatArgList(&b, fmt, ap);
     va_end(ap);
 
-    if (runtime.has_try == True) {
-        StringBuilder_ToString(&b, &runtime.try.err->string);
-        longjmp(runtime.try.env, 1);
+    Int n = runtime.tries.len;
+    if (n) {
+        StringBuilder_ToString(&b, &runtime.tries.items[n - 1].err->string);
+        longjmp(runtime.tries.items[n - 1].env, 1);
     } else {
         String msg;
         StringBuilder_ToString(&b, &msg);
