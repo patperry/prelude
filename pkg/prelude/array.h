@@ -37,5 +37,6 @@ Int Array_NextCap(Int elt, Int cap, Int diff);
 
 Define_Array(Byte)
 Define_Array(Bytes)
+Define_Array(Int)
 
 #endif /* PRELUDE_ARRAY_H */

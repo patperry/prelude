@@ -12,7 +12,7 @@ PACKAGE_A = pkg/libprelude.a
 PACKAGE_O = pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
 			pkg/string.o pkg/test.o
 
-ALL_O = $(PACKAGE_O) cmd/hello.o
+ALL_O = $(PACKAGE_O) cmd/hello.o test/test_assert.o test/test_string.o
 ALL_T = $(PACKAGE_A) bin/hello test/test_assert test/test_string
 ALL_A = $(PACKAGE_A)
 

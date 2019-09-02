@@ -57,11 +57,12 @@ typedef enum LogType {
 static void Log(LogType type, String *fmt, va_list ap);
 
 typedef struct TryPoint {
-    Error *err;
     jmp_buf env;
+    Error *err;
+    Int scope;
 } TryPoint;
 
-#define TryPoint_Init (TryPoint){NULL, {0}}
+#define TryPoint_Init (TryPoint){{0}, NULL, Int_None}
 
 Define_Array(TryPoint)
 Implement_Array(TryPoint)
@@ -74,17 +75,19 @@ typedef struct {
 #define MemoryStats_Init (MemoryStats){0, 0}
 
 typedef struct Runtime {
+    MemoryStats memory;
     LiteralsArray literals;
     FinalizerArray finalizers;
     TryPointArray tries;
-    MemoryStats memory;
+    IntArray scopes;
 } Runtime;
 
 #define Runtime_Init (Runtime){\
+    MemoryStats_Init, \
     LiteralsArray_Init, \
     Array_Init(Finalizer), \
     Array_Init(TryPoint), \
-    MemoryStats_Init \
+    Array_Init(Int) \
 }
 
 static void Runtime_Drop(void *arg);
@@ -93,6 +96,7 @@ static Runtime runtime;
 
 void Runtime_Drop(void *arg) {
     Runtime *r = arg;
+    IntArray_Drop(&r->scopes);
     TryPointArray_Drop(&r->tries);
     FinalizerArray_Drop(&r->finalizers);
     LiteralsArray_Drop(&r->literals);
@@ -124,27 +128,57 @@ Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
     return item;
 }
 
-
 void Initialize(void) {
     runtime = Runtime_Init;
 }
 
 void Finalize(void) {
     Runtime_Drop(&runtime);
-    Debug(S("current memory use: %d bytes"), runtime.memory.cur);
-    Debug(S("maximum memory use: %d bytes"), runtime.memory.max);
+    if (runtime.memory.cur) {
+        fprintf(stderr, "[ERROR] leaked memory: %zu bytes\n",
+                (size_t)runtime.memory.cur);
+    }
 }
 
 void Open(void) {
+    Int scope = runtime.finalizers.len;
+    IntArray_Grow(&runtime.scopes, 1);
+    runtime.scopes.items[runtime.scopes.len++] = scope;
+}
+
+static void unroll(Int scope, Bool trap) {
+    while (runtime.finalizers.len != scope) {
+        Assert(runtime.finalizers.len >= scope);
+
+        Finalizer action = runtime.finalizers.items[--runtime.finalizers.len];
+        switch (action.type) {
+        case Finalizer_None:
+            break;
+
+        case Finalizer_Trap:
+            if (trap) {
+                action.func(action.arg);
+            }
+            break;
+
+        case Finalizer_Defer:
+            action.func(action.arg);
+            break;
+        }
+    }
 }
 
 void Close(void) {
+    Assert(runtime.scopes.len > 0);
+    Int scope = runtime.scopes.items[--runtime.scopes.len];
+    unroll(scope, False);
 }
 
 void Try(void (*func)(void *arg), void *arg, Error *err) {
     TryPointArray_Grow(&runtime.tries, 1);
     Int n = runtime.tries.len;
     runtime.tries.items[n].err = err;
+    runtime.tries.items[n].scope = runtime.finalizers.len;
     if (!setjmp(runtime.tries.items[n].env)) {
         runtime.tries.len = n + 1;
         func(arg);
@@ -158,13 +192,14 @@ void Panic(String *fmt, ...) {
     va_start(ap, fmt);
 
     StringBuilder b = StringBuilder_Init;
-    Defer(StringBuilder_Drop, &b);
+    Trap(StringBuilder_Drop, &b);
     StringBuilder_WriteFormatArgList(&b, fmt, ap);
     va_end(ap);
 
     Int n = runtime.tries.len;
     if (n) {
         StringBuilder_ToString(&b, &runtime.tries.items[n - 1].err->string);
+        unroll(runtime.tries.items[n - 1].scope, True);
         longjmp(runtime.tries.items[n - 1].env, 1);
     } else {
         String msg;
@@ -172,6 +207,7 @@ void Panic(String *fmt, ...) {
         fprintf(stderr, "panic: %.*s\n", (int)msg.bytes.len,
                 (const char *)msg.bytes.ptr);
         String_Drop(&msg);
+        unroll(0, True);
         abort();
     }
 }
@@ -261,6 +297,7 @@ void *Realloc(void *ptr, Int from, Int to) {
 }
 
 void Log(LogType type, String *fmt, va_list ap) {
+    Open();
     StringBuilder b = StringBuilder_Init;
     Defer(StringBuilder_Drop, &b);
 
@@ -286,6 +323,7 @@ void Log(LogType type, String *fmt, va_list ap) {
                 s.bytes.len, s.bytes.ptr);
         fflush(stderr);
     }
+    Close();
 }
 
 void Debug(String *fmt, ...) {

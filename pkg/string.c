@@ -93,15 +93,15 @@ void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
     Char c, fmtc;
     Int i;
     String *s, *sep = S("%");
-    StringView head, tail, left;
+    StringView pre, post, left;
 
     left.string = *fmt;
 
     while (String_Some(&left.string)) {
-        String_Split(&left.string, sep, &head, &tail);
-        StringBuilder_WriteString(b, &head.string);
+        String_Split(&left.string, sep, &pre, &post);
+        StringBuilder_WriteString(b, &pre.string);
 
-        if (String_UnCons(&tail.string, &fmtc, &left)) {
+        if (String_UnCons(&post.string, &fmtc, &left)) {
             switch (fmtc) {
             case '%':
                 StringBuilder_WriteChar(b, '%');
