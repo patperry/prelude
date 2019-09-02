@@ -8,6 +8,21 @@
 #include "prelude.h"
 #include "prelude/string.h"
 
+typedef enum {
+    Finalizer_None = 0,
+    Finalizer_Defer,
+    Finalizer_Trap
+} FinalizerType;
+
+typedef struct Finalizer {
+    void (*func)(void *arg);
+    void *arg;
+    FinalizerType type;
+} Finalizer;
+
+Define_Array(Finalizer)
+Implement_Array(Finalizer)
+
 // Don't use array for literals, to avoid circular dependency
 
 enum {
@@ -60,12 +75,14 @@ typedef struct {
 
 typedef struct Runtime {
     LiteralsArray literals;
+    FinalizerArray finalizers;
     TryPointArray tries;
     MemoryStats memory;
 } Runtime;
 
 #define Runtime_Init (Runtime){\
     LiteralsArray_Init, \
+    Array_Init(Finalizer), \
     Array_Init(TryPoint), \
     MemoryStats_Init \
 }
@@ -77,6 +94,7 @@ static Runtime runtime;
 void Runtime_Drop(void *arg) {
     Runtime *r = arg;
     TryPointArray_Drop(&r->tries);
+    FinalizerArray_Drop(&r->finalizers);
     LiteralsArray_Drop(&r->literals);
 }
 
@@ -112,9 +130,9 @@ void Initialize(void) {
 }
 
 void Finalize(void) {
+    Runtime_Drop(&runtime);
     Debug(S("current memory use: %d bytes"), runtime.memory.cur);
     Debug(S("maximum memory use: %d bytes"), runtime.memory.max);
-    Runtime_Drop(&runtime);
 }
 
 void Open(void) {
@@ -158,16 +176,24 @@ void Panic(String *fmt, ...) {
     }
 }
 
+static void addFinalizer(FinalizerType type, void (*func)(void *arg),
+                         void *arg) {
+    FinalizerArray_Grow(&runtime.finalizers, 1);
+    Int n = runtime.finalizers.len;
+    runtime.finalizers.items[n] = (Finalizer){
+        .func = func,
+        .arg = arg,
+        .type = type
+    };
+    runtime.finalizers.len = n + 1;
+}
+
 void Defer(void (*func)(void *arg), void *arg) {
-    (void)func;
-    (void)arg;
-    // TODO
+    addFinalizer(Finalizer_Defer, func, arg);
 }
 
 void Trap(void (*func)(void *arg), void *arg) {
-    (void)func;
-    (void)arg;
-    // TODO
+    addFinalizer(Finalizer_Trap, func, arg);
 }
 
 String *S(const char *str) {
