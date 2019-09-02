@@ -187,26 +187,23 @@ void Try(void (*func)(void *arg), void *arg, Error *err) {
 }
 
 void Panic(String *fmt, ...) {
-    // TODO: careful error handling
     va_list ap;
-    va_start(ap, fmt);
 
-    StringBuilder b = StringBuilder_Init;
-    Trap(StringBuilder_Drop, &b);
-    StringBuilder_WriteFormatArgList(&b, fmt, ap);
-    va_end(ap);
+    va_start(ap, fmt);
 
     Int n = runtime.tries.len;
     if (n) {
-        StringBuilder_ToString(&b, &runtime.tries.items[n - 1].err->string);
+        Error_NewFromArgList(runtime.tries.items[n - 1].err, fmt, ap);
+        va_end(ap);
         unroll(runtime.tries.items[n - 1].scope, True);
         longjmp(runtime.tries.items[n - 1].env, 1);
     } else {
-        String msg;
-        StringBuilder_ToString(&b, &msg);
-        fprintf(stderr, "panic: %.*s\n", (int)msg.bytes.len,
-                (const char *)msg.bytes.ptr);
-        String_Drop(&msg);
+        Error err;
+        Error_NewFromArgList(&err, fmt, ap);
+        va_end(ap);
+        fprintf(stderr, "panic: %.*s\n", (int)err.string.bytes.len,
+                (const char *)err.string.bytes.ptr);
+        Error_Drop(&err);
         unroll(0, True);
         abort();
     }

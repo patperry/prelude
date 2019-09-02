@@ -61,6 +61,8 @@ typedef struct Error {
 } Error;
 
 #define Error_Init (Error){String_Init}
+void Error_New(Error *e, String *fmt, ...);
+void Error_NewFromArgList(Error *e, String *fmt, va_list ap);
 
 void Error_Drop(void *arg);
 

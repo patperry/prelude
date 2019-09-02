@@ -2,7 +2,7 @@
 
 static void panic(void *arg) {
     (void)arg;
-    Panic(S("%s"), S("panic!"));
+    Panic(S("panic!"));
 }
 
 static void unit_panic(void) {
