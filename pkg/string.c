@@ -60,6 +60,10 @@ void StringBuilder_Drop(void *arg) {
     BytesBuilder_Drop(&b->bytes);
 }
 
+void StringBuilder_Clear(StringBuilder *b) {
+    BytesBuilder_Clear(&b->bytes);
+}
+
 void StringBuilder_WriteChar(StringBuilder *b, Char c) {
     Assert(0 <= c && c <= 0x7f); // TODO: handle non-ASCII
     BytesBuilder_WriteByte(&b->bytes, (Byte)c);
@@ -129,4 +133,10 @@ void StringBuilder_WriteFormatArgList(StringBuilder *b, String *fmt,
 
 void StringBuilder_ToString(StringBuilder *b, String *s) {
     BytesBuilder_ToBytes(&b->bytes, &s->bytes);
+}
+
+void StringBuilder_View(StringBuilder *b, StringView *s) {
+    BytesView v;
+    BytesBuilder_View(&b->bytes, &v);
+    s->string.bytes = v.bytes;
 }

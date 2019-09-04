@@ -1,18 +1,34 @@
 #include "prelude/test.h"
 
-static void panic(void *arg) {
+static void panic1(void *arg) {
     (void)arg;
     Panic(S("panic!"));
 }
 
+static void noop(void *arg) {
+    (void)arg;
+}
+
+static void panic2(void *arg) {
+    (void)arg;
+    Assert_Panic(noop, arg);
+}
+
+static void panic3(void *arg) {
+    (void)arg;
+    Assert_NotPanic(panic1, arg);
+}
+
 static void unit_panic(void) {
-    Assert_Panic(panic, NULL);
+    Assert_Panic(panic1, NULL);
+    Assert_Panic(panic2, NULL);
+    Assert_Panic(panic3, NULL);
 }
 
 static void catch_panic(void *arg) {
     (void)arg;
     Error err = Error_Init;
-    Try(panic, NULL, &err);
+    Try(panic1, NULL, &err);
     Assert(Error_Some(&err));
     Error_Drop(&err);
 }

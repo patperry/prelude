@@ -60,6 +60,7 @@ typedef struct TryPoint {
     jmp_buf env;
     Error *err;
     Int scope;
+    Int scopes_len;
 } TryPoint;
 
 #define TryPoint_Init (TryPoint){{0}, NULL, Int_None}
@@ -80,6 +81,7 @@ typedef struct Runtime {
     FinalizerArray finalizers;
     TryPointArray tries;
     IntArray scopes;
+    StringBuilder log_builder;
 } Runtime;
 
 #define Runtime_Init (Runtime){\
@@ -87,7 +89,8 @@ typedef struct Runtime {
     LiteralsArray_Init, \
     Array_Init(Finalizer), \
     Array_Init(TryPoint), \
-    Array_Init(Int) \
+    Array_Init(Int), \
+    StringBuilder_Init \
 }
 
 static void Runtime_Drop(void *arg);
@@ -96,6 +99,7 @@ static Runtime runtime;
 
 void Runtime_Drop(void *arg) {
     Runtime *r = arg;
+    StringBuilder_Drop(&r->log_builder);
     IntArray_Drop(&r->scopes);
     TryPointArray_Drop(&r->tries);
     FinalizerArray_Drop(&r->finalizers);
@@ -133,9 +137,13 @@ void Initialize(void) {
 }
 
 void Finalize(void) {
+    if (runtime.scopes.len) {
+        fprintf(stderr, "[ERROR] stack imbalance: %d frame(s)\n",
+                (int)runtime.scopes.len);
+    }
     Runtime_Drop(&runtime);
     if (runtime.memory.cur) {
-        fprintf(stderr, "[ERROR] leaked memory: %zu bytes\n",
+        fprintf(stderr, "[ERROR] memory leak: %zu bytes\n",
                 (size_t)runtime.memory.cur);
     }
 }
@@ -144,6 +152,7 @@ void Open(void) {
     Int scope = runtime.finalizers.len;
     IntArray_Grow(&runtime.scopes, 1);
     runtime.scopes.items[runtime.scopes.len++] = scope;
+    //Debug(S("push scope %d"), scope);
 }
 
 static void unroll(Int scope, Bool trap) {
@@ -171,6 +180,7 @@ static void unroll(Int scope, Bool trap) {
 void Close(void) {
     Assert(runtime.scopes.len > 0);
     Int scope = runtime.scopes.items[--runtime.scopes.len];
+    //Debug(S("pop scope %d"), scope);
     unroll(scope, False);
 }
 
@@ -179,6 +189,7 @@ void Try(void (*func)(void *arg), void *arg, Error *err) {
     Int n = runtime.tries.len;
     runtime.tries.items[n].err = err;
     runtime.tries.items[n].scope = runtime.finalizers.len;
+    runtime.tries.items[n].scopes_len = runtime.scopes.len;
     if (!setjmp(runtime.tries.items[n].env)) {
         runtime.tries.len = n + 1;
         func(arg);
@@ -188,19 +199,20 @@ void Try(void (*func)(void *arg), void *arg, Error *err) {
 
 void Panic(String *fmt, ...) {
     va_list ap;
-
     va_start(ap, fmt);
+    Error err;
+    Error_NewFromArgList(&err, fmt, ap);
+    va_end(ap);
 
     Int n = runtime.tries.len;
     if (n) {
-        Error_NewFromArgList(runtime.tries.items[n - 1].err, fmt, ap);
-        va_end(ap);
-        unroll(runtime.tries.items[n - 1].scope, True);
+        *runtime.tries.items[n - 1].err = err;
+        Int s = runtime.tries.items[n - 1].scope;
+        Int l = runtime.tries.items[n - 1].scopes_len;
+        unroll(s, True);
+        runtime.scopes.len = l;
         longjmp(runtime.tries.items[n - 1].env, 1);
     } else {
-        Error err;
-        Error_NewFromArgList(&err, fmt, ap);
-        va_end(ap);
         fprintf(stderr, "panic: %.*s\n", (int)err.string.bytes.len,
                 (const char *)err.string.bytes.ptr);
         Error_Drop(&err);
@@ -294,18 +306,13 @@ void *Realloc(void *ptr, Int from, Int to) {
 }
 
 void Log(LogType type, String *fmt, va_list ap) {
-    Open();
-    StringBuilder b = StringBuilder_Init;
-    Defer(StringBuilder_Drop, &b);
+    StringBuilder_WriteFormatArgList(&runtime.log_builder, fmt, ap);
 
-    StringBuilder_WriteFormatArgList(&b, fmt, ap);
-
-    String s;
-    StringBuilder_ToString(&b, &s); // TODO: use shared builder for all logs
-    Defer(String_Drop, &s);
+    StringView s;
+    StringBuilder_View(&runtime.log_builder, &s);
 
     if (type == Log_Info) {
-        fprintf(stdout, "%.*s\n", s.bytes.len, s.bytes.ptr);
+        fprintf(stdout, "%.*s\n", s.string.bytes.len, s.string.bytes.ptr);
         fflush(stdout);
     } else if (type == Log_Debug) {
         time_t clock;
@@ -317,10 +324,10 @@ void Log(LogType type, String *fmt, va_list ap) {
         fprintf(stderr, "%d-%02d-%02d %02d:%02d:%02d [DEBUG] %.*s\n",
                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                 tm.tm_hour, tm.tm_min, tm.tm_sec,
-                s.bytes.len, s.bytes.ptr);
+                s.string.bytes.len, s.string.bytes.ptr);
         fflush(stderr);
     }
-    Close();
+    StringBuilder_Clear(&runtime.log_builder);
 }
 
 void Debug(String *fmt, ...) {

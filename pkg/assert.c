@@ -16,16 +16,17 @@ void Assert_Panic_(void (*func)(void *arg), void *arg,
 void Assert_NotPanic_(void (*func)(void *arg), void *arg,
                       String *expr, String *funcs, String *file, Int line)
 {
+    Open();
     Error err = Error_Init;
     Try(func, arg, &err);
     if (Error_Some(&err)) {
-        //Error_Drop(&err); TODO: fix memory leak
+        Defer(Error_Drop, &err);
         Panic(S("unexpected panic \"%s\" from %s"
                 ": function %s, file \"%s\", line %d"),
               &err, expr, funcs, file, line);
     }
+    Close();
 }
-
 
 void Assert_(Bool test, String *expr, String *func, String *file, Int line) {
     if (test != True) {

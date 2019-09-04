@@ -85,6 +85,10 @@ void BytesBuilder_Drop(void *arg) {
     ByteArray_Drop(&b->buf);
 }
 
+void BytesBuilder_Clear(BytesBuilder *b) {
+    b->buf.len = 0;
+}
+
 void BytesBuilder_WriteByte(BytesBuilder *b, Byte x) {
     ByteArray_Grow(&b->buf, 1);
     b->buf.items[b->buf.len++] = x;
@@ -101,4 +105,9 @@ void BytesBuilder_ToBytes(BytesBuilder *b, Bytes *s) {
     s->ptr = Realloc(b->buf.items, b->buf.cap, b->buf.len);
     s->len = b->buf.len;
     *b = BytesBuilder_Init;
+}
+
+void BytesBuilder_View(BytesBuilder *b, BytesView *s) {
+    s->bytes.ptr = b->buf.items;
+    s->bytes.len = b->buf.len;
 }
