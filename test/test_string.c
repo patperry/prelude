@@ -24,7 +24,7 @@ static Bytes *invalidUtf8(Bytes *b, Int n) {
 }
 */
 
-static void unit_eq(void) {
+static void case_eq(void) {
     Assert_StringEq(S(""), S(""));
     Assert_StringEq(S("hello world"), S("hello world"));
     Assert_StringNotEq(S(""), S(" "));
@@ -53,9 +53,8 @@ int main(int argc, const char **argv) {
     TestSuite s = TestSuite_Init;
     Defer(TestSuite_Drop, &s);
 
-    Int g = TestSuite_AddGroup(&s, S("string"));
-    TestSuite_AddUnit(&s, g, S("eq"), unit_eq);
-    TestSuite_AddProperty(&s, g, S("view utf8 bytes"), prop_view_utf8_bytes);
+    TestSuite_AddCase(&s, S("eq"), case_eq);
+    TestSuite_AddProperty(&s, S("view utf8 bytes"), prop_view_utf8_bytes);
 
     int ret = Test_Main(argc, argv, &s);
     Close();

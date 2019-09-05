@@ -7,16 +7,16 @@
 
 typedef enum {
     Test_None = 0,
-    Test_Property,
-    Test_Unit
+    Test_Case,
+    Test_Property
 } TestType;
 
 typedef struct Test {
     TestType type;
     String name;
     union {
+        void (*tcase)(void);
         void (*prop)(Int n);
-        void (*unit)(void);
     } func;
 } Test;
 
@@ -24,43 +24,23 @@ typedef struct Test {
 
 Define_Array(Test)
 
+void Test_NewCase(Test *t, String *name, void (*tcase)(void));
 void Test_NewProperty(Test *t, String *name, void (*prop)(Int n));
-void Test_NewUnit(Test *t, String *name, void (*unit)(void));
 void Test_Drop(void *arg);
 Bool Test_Run(Test *t);
 
 
-typedef struct TestGroup {
-    String name;
-    TestArray tests;
-} TestGroup;
-
-#define TestGroup_Init (TestGroup){String_Init, Array_Init(Test)}
-
-Define_Array(TestGroup)
-
-void TestGroup_New(TestGroup *g, String *name);
-void TestGroup_Drop(void *arg);
-void TestGroup_AddUnit(TestGroup *g, String *name,
-                       void (*unit)(void));
-void TestGroup_AddProperty(TestGroup *g, String *name,
-                           void (*prop)(Int n));
-Bool TestGroup_Run(TestGroup *g);
-
 typedef struct TestSuite {
-    TestGroupArray groups;
+    TestArray tests;
 } TestSuite;
 
-#define TestSuite_Init (TestSuite){Array_Init(TestGroup)}
+#define TestSuite_Init (TestSuite){Array_Init(Test)}
 
 void TestSuite_Drop(void *arg);
-Int TestSuite_AddGroup(TestSuite *s, String *name);
-void TestSuite_AddUnit(TestSuite *s, Int group, String *name,
-                       void (*unit)(void));
-void TestSuite_AddProperty(TestSuite *s, Int group, String *name,
-                           void (*prop)(Int n));
-Bool TestSuite_Run(TestSuite *s);
 
+void TestSuite_AddCase(TestSuite *s, String *name, void (*tcase)(void));
+void TestSuite_AddProperty(TestSuite *s, String *name, void (*prop)(Int n));
+Bool TestSuite_Run(TestSuite *s);
 
 int Test_Main(int argc, const char **argv, TestSuite *suite);
 

@@ -3,73 +3,21 @@
 #include "prelude/test.h"
 
 Implement_Array(Test)
-Implement_Array(TestGroup)
-
 
 void TestSuite_Drop(void *arg) {
     TestSuite *s = arg;
-    Int n = s->groups.len;
+    Int n = s->tests.len;
     while (n-- > 0) {
-        TestGroup_Drop(&s->groups.items[n]);
+        Test_Drop(&s->tests.items[n]);
     }
-    TestGroupArray_Drop(&s->groups);
+    TestArray_Drop(&s->tests);
 }
 
 Bool TestSuite_Run(TestSuite *s) {
     Bool succ = True;
-    Int i, n = s->groups.len;
+    Int i, n = s->tests.len;
     for (i = 0; i < n; i++) {
-        Bool g = TestGroup_Run(&s->groups.items[i]);
-        if (g == False) {
-            succ = False;
-        }
-    }
-    return succ;
-}
-
-Int TestSuite_AddGroup(TestSuite *s, String *name) {
-    Int n = s->groups.len;
-    TestGroupArray_Grow(&s->groups, 1);
-    TestGroup_New(&s->groups.items[n], name);
-    s->groups.len = n + 1;
-    return n;
-}
-
-void TestSuite_AddUnit(TestSuite *s, Int group, String *name,
-                       void (*unit)(void)) {
-    TestGroup_AddUnit(&s->groups.items[group], name, unit);
-}
-
-void TestSuite_AddProperty(TestSuite *s, Int group, String *name,
-                           void (*prop)(Int n)) {
-    TestGroup_AddProperty(&s->groups.items[group], name, prop);
-}
-
-void TestGroup_New(TestGroup *g, String *name) {
-    Open();
-    *g = TestGroup_Init;
-    String_FromCopy(&g->name, name);
-    Trap(String_Drop, &g->name);
-    g->tests = Array_Init(Test);
-    Close();
-}
-
-void TestGroup_Drop(void *arg) {
-    TestGroup *g = arg;
-    Int n = g->tests.len;
-    while (n-- > 0) {
-        Test_Drop(&g->tests.items[n]);
-    }
-    TestArray_Drop(&g->tests);
-    String_Drop(&g->name);
-}
-
-Bool TestGroup_Run(TestGroup *g) {
-    Debug(S("running test group \"%s\""), &g->name);
-    Bool succ = True;
-    Int i, n = g->tests.len;
-    for (i = 0; i < n; i++) {
-        Bool t = Test_Run(&g->tests.items[i]);
+        Bool t = Test_Run(&s->tests.items[i]);
         if (t == False) {
             succ = False;
         }
@@ -77,28 +25,28 @@ Bool TestGroup_Run(TestGroup *g) {
     return succ;
 }
 
-static int testGroup_GrowTests(TestGroup *g) {
-    TestArray_Grow(&g->tests, 1);
-    Int n = g->tests.len;
-    g->tests.items[n] = Test_Init;
-    g->tests.len = n + 1;
+static int testSuite_GrowTests(TestSuite *s) {
+    TestArray_Grow(&s->tests, 1);
+    Int n = s->tests.len;
+    s->tests.items[n] = Test_Init;
+    s->tests.len = n + 1;
     return n;
 }
 
-void TestGroup_AddUnit(TestGroup *g, String *name, void (*unit)(void)) {
-    Int i = testGroup_GrowTests(g);
-    Test_NewUnit(&g->tests.items[i], name, unit);
+void TestSuite_AddCase(TestSuite *s, String *name, void (*tcase)(void)) {
+    Int i = testSuite_GrowTests(s);
+    Test_NewCase(&s->tests.items[i], name, tcase);
 }
 
-void TestGroup_AddProperty(TestGroup *g, String *name, void (*prop)(Int n)) {
-    Int i = testGroup_GrowTests(g);
-    Test_NewProperty(&g->tests.items[i], name, prop);
+void TestSuite_AddProperty(TestSuite *s, String *name, void (*prop)(Int n)) {
+    Int i = testSuite_GrowTests(s);
+    Test_NewProperty(&s->tests.items[i], name, prop);
 }
 
-void Test_NewUnit(Test *t, String *name, void (*unit)(void)) {
-    t->type = Test_Unit;
+void Test_NewCase(Test *t, String *name, void (*tcase)(void)) {
+    t->type = Test_Case;
     String_FromCopy(&t->name, name);
-    t->func.unit = unit;
+    t->func.tcase = tcase;
 }
 
 void Test_NewProperty(Test *t, String *name, void (*prop)(Int n)) {
@@ -113,12 +61,12 @@ void Test_Drop(void *arg) {
 }
 
 Bool Test_Run(Test *t) {
-    Debug(S("running test \"%s\""), &t->name);
+    Info(S("running test \"%s\""), &t->name);
     switch (t->type) {
     case Test_None:
         break;
-    case Test_Unit:
-        (t->func.unit)();
+    case Test_Case:
+        (t->func.tcase)();
         break;
     case Test_Property:
         (t->func.prop)(10); // TODO fix n;
