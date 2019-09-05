@@ -57,6 +57,24 @@ static void case_errorNone(void) {
     Assert_Panic(fail_errorNone, NULL);
 }
 
+static void fail_intEq(void *arg) {
+    (void)arg;
+    Assert_IntEq(31337, 31338);
+}
+
+static void case_intEq(void) {
+    Assert_Panic(fail_intEq, NULL);
+}
+
+static void fail_intNotEq(void *arg) {
+    (void)arg;
+    Assert_IntNotEq(Int_None, Int_None);
+}
+
+static void case_intNotEq(void) {
+    Assert_Panic(fail_intNotEq, NULL);
+}
+
 static void fail_stringEq(void *arg) {
     (void)arg;
     Assert_StringEq(S("a"), S("b"));
@@ -86,6 +104,8 @@ int main(int argc, const char **argv) {
     TestSuite_AddCase(&s, S("not panic"), case_notPanic);
     TestSuite_AddCase(&s, S("assert"), case_assert);
     TestSuite_AddCase(&s, S("error none"), case_errorNone);
+    TestSuite_AddCase(&s, S("int eq"), case_intEq);
+    TestSuite_AddCase(&s, S("int not eq"), case_intNotEq);
     TestSuite_AddCase(&s, S("string eq"), case_stringEq);
     TestSuite_AddCase(&s, S("string not eq"), case_stringNotEq);
 

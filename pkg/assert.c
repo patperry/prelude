@@ -43,6 +43,22 @@ void Assert_ErrorNone_(Error *err, String *func, String *file, Int line) {
     }
 }
 
+void Assert_IntEq_(Int x1, Int x2, String *func, String *file, Int line) {
+    if (x1 != x2) {
+        Panic(S("assertion %d = %d failed"
+                ": function %s, file \"%s\", line %d"),
+              x1, x2, func, file, line);
+    }
+}
+
+void Assert_IntNotEq_(Int x1, Int x2, String *func, String *file, Int line) {
+    if (x1 == x2) {
+        Panic(S("assertion %d != %d failed"
+                ": function %s, file \"%s\", line %d"),
+              x1, x2, func, file, line);
+    }
+}
+
 void Assert_StringEq_(String *s1, String *s2, String *func, String *file,
                       Int line) {
     if (String_Eq(s1, s2) != True) {

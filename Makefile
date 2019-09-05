@@ -10,10 +10,11 @@ LDFLAGS += -g
 
 PACKAGE_A = pkg/libprelude.a
 PACKAGE_O = pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
-			pkg/string.o pkg/test.o
+			pkg/rng.o pkg/string.o pkg/test.o
 
-ALL_O = $(PACKAGE_O) cmd/hello.o test/test_assert.o test/test_string.o
-ALL_T = $(PACKAGE_A) bin/hello test/test_assert test/test_string
+ALL_O = $(PACKAGE_O) cmd/hello.o test/test_assert.o test/test_rng.o \
+		test/test_string.o
+ALL_T = $(PACKAGE_A) bin/hello test/test_assert test/test_rng test/test_string
 ALL_A = $(PACKAGE_A)
 
 .PHONY: all
@@ -29,6 +30,9 @@ bin/hello: cmd/hello.o $(PACKAGE_A)
 test/test_assert: test/test_assert.o $(PACKAGE_A)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+test/test_rng: test/test_rng.o $(PACKAGE_A)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
 test/test_string: test/test_string.o $(PACKAGE_A)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
@@ -40,6 +44,7 @@ clean:
 	$(RM) $(ALL_T) $(ALL_O)
 
 .PHONY: check
-check: test/test_assert test/test_string
+check: test/test_assert test/test_rng test/test_string
 	test/test_assert
+	test/test_rng
 	test/test_string
