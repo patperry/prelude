@@ -27,13 +27,8 @@ Bool TestSuite_Run(TestSuite *s) {
     return succ;
 }
 
-Int TestSuite_Group(TestSuite *s, String *name) {
-    Int i, n = s->groups.len;
-    for (i = 0; i < n; i++) {
-        if (String_Eq(&s->groups.items[i].name, name)) {
-            return i;
-        }
-    }
+Int TestSuite_AddGroup(TestSuite *s, String *name) {
+    Int n = s->groups.len;
     TestGroupArray_Grow(&s->groups, 1);
     TestGroup_New(&s->groups.items[n], name);
     s->groups.len = n + 1;

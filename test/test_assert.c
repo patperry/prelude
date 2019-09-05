@@ -82,7 +82,7 @@ int main(int argc, const char **argv) {
     TestSuite s = TestSuite_Init;
     Defer(TestSuite_Drop, &s);
 
-    Int g = TestSuite_Group(&s, S("assert"));
+    Int g = TestSuite_AddGroup(&s, S("assert"));
     TestSuite_AddUnit(&s, g, S("panic"), unit_panic);
     TestSuite_AddUnit(&s, g, S("not panic"), unit_notPanic);
     TestSuite_AddUnit(&s, g, S("assert"), unit_assert);

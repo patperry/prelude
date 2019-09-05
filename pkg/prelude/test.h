@@ -54,7 +54,7 @@ typedef struct TestSuite {
 #define TestSuite_Init (TestSuite){Array_Init(TestGroup)}
 
 void TestSuite_Drop(void *arg);
-Int TestSuite_Group(TestSuite *s, String *name);
+Int TestSuite_AddGroup(TestSuite *s, String *name);
 void TestSuite_AddUnit(TestSuite *s, Int group, String *name,
                        void (*unit)(void));
 void TestSuite_AddProperty(TestSuite *s, Int group, String *name,
