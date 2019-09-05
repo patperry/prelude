@@ -310,23 +310,29 @@ void Log(LogType type, String *fmt, va_list ap) {
 
     StringView s;
     StringBuilder_View(&runtime.log_builder, &s);
+    FILE *stream;
+    const char *tag;
 
     if (type == Log_Info) {
-        fprintf(stdout, "%.*s\n", s.string.bytes.len, s.string.bytes.ptr);
-        fflush(stdout);
-    } else if (type == Log_Debug) {
-        time_t clock;
-        struct tm tm;
-
-        time(&clock);
-        tm = *gmtime(&clock); // TODO: replace with reentrant version
-
-        fprintf(stderr, "%d-%02d-%02d %02d:%02d:%02d [DEBUG] %.*s\n",
-                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                tm.tm_hour, tm.tm_min, tm.tm_sec,
-                s.string.bytes.len, s.string.bytes.ptr);
-        fflush(stderr);
+        stream = stdout;
+        tag = "";
+    } else {
+        stream = stderr;
+        tag = "[DEBUG] ";
     }
+
+    time_t clock;
+    struct tm tm;
+
+    time(&clock);
+    tm = *gmtime(&clock); // TODO: replace with reentrant version
+
+    fprintf(stream, "%d-%02d-%02d %02d:%02d:%02d %s%.*s\n",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min, tm.tm_sec, tag,
+            s.string.bytes.len, s.string.bytes.ptr);
+    fflush(stream);
+
     StringBuilder_Clear(&runtime.log_builder);
 }
 
