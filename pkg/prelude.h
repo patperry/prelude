@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <limits.h>
 
 /* Primitive data types */
@@ -13,10 +14,17 @@ typedef enum {
     True = 1
 } Bool;
 
+/*
 typedef int Int;
 #define Int_None INT_MIN
 #define Int_Min (INT_MIN + 1)
 #define Int_Max INT_MAX
+*/
+
+typedef int64_t Int;
+#define Int_None INT64_MIN
+#define Int_Min (INT64_MIN + 1)
+#define Int_Max INT64_MAX
 
 typedef unsigned char Byte;
 #define Byte_None (Byte)0

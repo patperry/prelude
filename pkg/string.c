@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include "prelude/string.h"
@@ -75,7 +76,7 @@ void StringBuilder_WriteInt(StringBuilder *b, Int x) {
         return;
     }
     char buf[32];
-    Int n = (Int)sprintf(buf, "%d", x);
+    Int n = (Int)sprintf(buf, "%"PRId64, x);
     Bytes fmt = {.ptr = (Byte *)buf, .len = n};
     String str = {fmt};
     StringBuilder_WriteString(b, &str);

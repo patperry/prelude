@@ -330,7 +330,7 @@ void Log(LogType type, String *fmt, va_list ap) {
     fprintf(stream, "%d-%02d-%02d %02d:%02d:%02d %s%.*s\n",
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
             tm.tm_hour, tm.tm_min, tm.tm_sec, tag,
-            s.string.bytes.len, s.string.bytes.ptr);
+            (int)s.string.bytes.len, s.string.bytes.ptr);
     fflush(stream);
 
     StringBuilder_Clear(&runtime.log_builder);
