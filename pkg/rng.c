@@ -130,7 +130,8 @@ void Xoshiro256plus_LongJump(Xoshiro256plus *rng) {
     s[3] = s3;
 }
 
-Float Rng_Uniform(Rng *rng) {
-    (void)rng; // TODO
-    return 0;
+Float Xoshiro256plus_Uniform(Xoshiro256plus *rng) {
+    /* Recommended at http://prng.di.unimi.it/ */
+    Word64 x = Xoshiro256plus_Next(rng);
+    return (x >> 11) * (1.0 / (W64(1) << 53));
 }
