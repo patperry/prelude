@@ -1,18 +1,29 @@
 #include "prelude/rng.h"
 #include "prelude/test.h"
 
-static void case_sameSeed(void) {
-    Rng r1, r2;
-    Rng_New(&r1, 31337);
-    Defer(Rng_Drop, &r1);
-    Rng_New(&r2, 31337);
-    Defer(Rng_Drop, &r2);
+static void case_xoshiro256plusInit(void) {
+    Splitmix64 s = Splitmix64_Init;
+    Xoshiro256plus xo = Xoshiro256plus_Init;
 
-    Int i, n = 1000;
+    int i, n = Xoshiro256plus_StateLen;
     for (i = 0; i < n; i++) {
-        Int x1 = Rng_Next(&r1);
-        Int x2 = Rng_Next(&r2);
-        Assert_IntEq(x1, x2);
+        Word64 x = Splitmix64_Next(&s);
+        Assert(x == xo.state[i]);
+    }
+}
+
+static void case_xoshiro256plusSeed(void) {
+    Splitmix64 s = Splitmix64_Init;
+    Xoshiro256plus xo = Xoshiro256plus_Init;
+    Int seed = 0x0fedc031337abcde;
+
+    Xoshiro256plus_Seed(&xo, seed);
+    Splitmix64_Seed(&s, seed);
+
+    Int i, n = Xoshiro256plus_StateLen;
+    for (i = 0; i < n; i++) {
+        Word64 x = Splitmix64_Next(&s);
+        Assert(x == xo.state[i]);
     }
 }
 
@@ -23,7 +34,8 @@ int main(int argc, const char **argv) {
     TestSuite s = TestSuite_Init;
     Defer(TestSuite_Drop, &s);
 
-    TestSuite_AddCase(&s, S("same seed"), case_sameSeed);
+    TestSuite_AddCase(&s, S("xoshiro256+ init"), case_xoshiro256plusInit);
+    TestSuite_AddCase(&s, S("xoshiro256+ seed"), case_xoshiro256plusSeed);
 
     int ret = Test_Main(argc, argv, &s);
     Close();

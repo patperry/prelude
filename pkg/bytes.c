@@ -32,7 +32,7 @@ Bool Bytes_Eq(Bytes *b1, Bytes *b2) {
 
 Bool Bytes_UnCons(Bytes *b, Byte *head, BytesView *tail) {
     if (Bytes_None(b)) {
-        *head = Byte_None;
+        *head = 0;
         tail->bytes = *b;
         return False;
     } else {

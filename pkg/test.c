@@ -60,19 +60,43 @@ void Test_Drop(void *arg) {
     String_Drop(&t->name);
 }
 
+static void tcase_run(void *arg) {
+    Test *t = arg;
+    t->func.tcase();
+}
+
+static Bool caseRun(Test *t) {
+    Open();
+    Assert(t->type == Test_Case);
+
+    Error err = Error_Init;
+    Try(tcase_run, t, &err);
+    Bool succ = True;
+
+    if (Error_Some(&err)) {
+        Defer(Error_Drop, &err);
+        Info(S("%s"), &err.string);
+        succ = False;
+    }
+
+    Close();
+    return succ;
+}
+
 Bool Test_Run(Test *t) {
     Info(S("running test \"%s\""), &t->name);
+    Bool ret = True;
     switch (t->type) {
     case Test_None:
         break;
     case Test_Case:
-        (t->func.tcase)();
+        ret = caseRun(t);
         break;
     case Test_Property:
         (t->func.prop)(10); // TODO fix n;
         break;
     }
-    return True;
+    return ret;
 }
 
 int Test_Main(int argc, const char **argv, TestSuite *suite) {

@@ -14,20 +14,22 @@ typedef enum {
     True = 1
 } Bool;
 
-/*
-typedef int Int;
-#define Int_None INT_MIN
-#define Int_Min (INT_MIN + 1)
-#define Int_Max INT_MAX
-*/
-
 typedef int64_t Int;
 #define Int_None INT64_MIN
 #define Int_Min (INT64_MIN + 1)
 #define Int_Max INT64_MAX
 
+typedef double Float;
+
 typedef unsigned char Byte;
-#define Byte_None (Byte)0
+typedef uint16_t Word16;
+typedef uint32_t Word32;
+typedef uint64_t Word64;
+
+#define Byte_Max UCHAR_MAX
+#define Word16_Max UINT16_MAX
+#define Word32_Max UINT32_MAX
+#define Word64_Max UINT64_MAX
 
 typedef struct Bytes {
     Byte *ptr;
