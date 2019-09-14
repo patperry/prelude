@@ -13,7 +13,6 @@ void Splitmix64_Seed(Splitmix64 *rng, Int seed);
 Word64 Splitmix64_Next(Splitmix64 *rng);
 Float Splitmix64_Uniform(Splitmix64 *rng);
 
-/* http://prng.di.unimi.it/xoshiro256plus.c */
 #define Xoshiro256plus_StateLen 4
 typedef struct Xoshiro256plus {
     Word64 state[Xoshiro256plus_StateLen];
@@ -30,7 +29,15 @@ void Xoshiro256plus_Seed(Xoshiro256plus *rng, Int seed);
 Word64 Xoshiro256plus_Next(Xoshiro256plus *rng);
 Float Xoshiro256plus_Uniform(Xoshiro256plus *rng);
 
+/* This is the jump function for the generator. It is equivalent
+   to 2^128 calls to next(); it can be used to generate 2^128
+   non-overlapping subsequences for parallel computations. */
 void Xoshiro256plus_Jump(Xoshiro256plus *rng);
+
+/* This is the long-jump function for the generator. It is equivalent to
+   2^192 calls to next(); it can be used to generate 2^64 starting points,
+   from each of which jump() will generate 2^64 non-overlapping
+   subsequences for parallel distributed computations. */
 void Xoshiro256plus_LongJump(Xoshiro256plus *rng);
 
 

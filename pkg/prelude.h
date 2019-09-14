@@ -31,6 +31,8 @@ typedef uint64_t Word64;
 #define Word32_Max UINT32_MAX
 #define Word64_Max UINT64_MAX
 
+#define W64 UINT64_C
+
 typedef struct Bytes {
     Byte *ptr;
     Int len;
