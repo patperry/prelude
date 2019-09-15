@@ -2,17 +2,18 @@
 #define PRELUDE_RNG
 
 #include "prelude.h"
+#include "prelude/array.h"
 
+#define Splitmix64_StateLen 1
 typedef struct Splitmix64 {
-    Word64 state;
+    Word64 state[Splitmix64_StateLen];
 } Splitmix64;
 
-#define Splitmix64_Init (Splitmix64){0}
+#define Splitmix64_Init (Splitmix64){{0}}
 
 void Splitmix64_Seed(Splitmix64 *rng, Int seed);
 Word64 Splitmix64_Next(Splitmix64 *rng);
 Float Splitmix64_Uniform(Splitmix64 *rng);
-
 
 #define Xoshiro256plus_StateLen 4
 typedef struct Xoshiro256plus {
@@ -41,21 +42,51 @@ void Xoshiro256plus_Jump(Xoshiro256plus *rng);
    subsequences for parallel distributed computations. */
 void Xoshiro256plus_LongJump(Xoshiro256plus *rng);
 
-
 typedef struct RngType {
-    String *name;
-    void (*seed)(void *rng, Int seed);
-    Float (*uniform)(void *rng);
+    Int state_len;
+    void (*seed)(Word64 *state, Int seed);
+    Float (*uniform)(Word64 *state);
 } RngType;
 
+extern RngType *Rng_Splitmix64;
 extern RngType *Rng_Xoshiro256plus;
 
 typedef struct Rng {
     RngType *type;
-    void *value;
+    Word64Array state;
 } Rng;
+
+void Rng_New(Rng *rng, RngType *t); /* seeds with time */
+void Rng_FromCopy(Rng *rng, Rng *other);
+void Rng_Drop(void *arg);
 
 void Rng_Seed(Rng *rng, Int seed);
 Float Rng_Uniform(Rng *rng);
+
+typedef struct RngMakerType {
+    Int state_len;
+    void (*seed)(Word64 *state, Int seed);
+    void (*make)(Rng *rng, Word64 *state);
+} RngMakerType;
+
+extern RngMakerType *RngMaker_Xoshiro256plus;
+
+typedef struct RngMaker {
+    RngMakerType *type;
+    Word64Array state;
+} RngMaker;
+
+void RngMaker_New(RngMaker *m, RngMakerType *t);
+void RngMaker_Drop(void *arg);
+void RngMaker_Seed(RngMaker *m, Int seed);
+void RngMaker_Make(RngMaker *m, Rng *rng);
+
+
+void Random_Uniform(void);
+void Random_Seed(Int seed);
+Rng *Random_Rng(void);
+
+void Random_SeedMaker(Int seed);
+RngMaker *Random_RngMaker(void);
 
 #endif /* PRELUDE_RNG */

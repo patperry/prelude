@@ -16,12 +16,12 @@
 #include "prelude/rng.h"
 
 void Splitmix64_Seed(Splitmix64 *rng, Int seed) {
-    rng->state = (Word64)seed; // TODO: handle NA seed
+    rng->state[0] = (Word64)seed; // TODO: handle NA seed
 }
 
 
 Word64 Splitmix64_Next(Splitmix64 *rng) {
-    Word64 z = (rng->state += 0x9e3779b97f4a7c15);
+    Word64 z = (rng->state[0] += 0x9e3779b97f4a7c15);
 	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
 	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
 	return z ^ (z >> 31);
