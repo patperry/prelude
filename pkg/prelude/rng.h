@@ -13,6 +13,7 @@ void Splitmix64_Seed(Splitmix64 *rng, Int seed);
 Word64 Splitmix64_Next(Splitmix64 *rng);
 Float Splitmix64_Uniform(Splitmix64 *rng);
 
+
 #define Xoshiro256plus_StateLen 4
 typedef struct Xoshiro256plus {
     Word64 state[Xoshiro256plus_StateLen];
@@ -45,7 +46,6 @@ typedef struct RngType {
     String *name;
     void (*seed)(void *rng, Int seed);
     Float (*uniform)(void *rng);
-    void (*jump)(void *rng);
 } RngType;
 
 extern RngType *Rng_Xoshiro256plus;

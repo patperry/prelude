@@ -27,11 +27,6 @@ Word64 Splitmix64_Next(Splitmix64 *rng) {
 	return z ^ (z >> 31);
 }
 
-Float Splitmix64_Uniform(Splitmix64 *rng) {
-    (void)rng; // TODO
-    return 0;
-}
-
 void Xoshiro256plus_Seed(Xoshiro256plus *rng, Int seed) {
     Splitmix64 s;
     Splitmix64_Seed(&s, seed);
@@ -130,8 +125,17 @@ void Xoshiro256plus_LongJump(Xoshiro256plus *rng) {
     s[3] = s3;
 }
 
+
+/* Recommended at http://prng.di.unimi.it/ */
+#define uniform(x) \
+    ((x) >> 11) * (1.0 / (W64(1) << 53))
+
+Float Splitmix64_Uniform(Splitmix64 *rng) {
+    Word64 x = Splitmix64_Next(rng);
+    return uniform(x);
+}
+
 Float Xoshiro256plus_Uniform(Xoshiro256plus *rng) {
-    /* Recommended at http://prng.di.unimi.it/ */
     Word64 x = Xoshiro256plus_Next(rng);
-    return (x >> 11) * (1.0 / (W64(1) << 53));
+    return uniform(x);
 }
