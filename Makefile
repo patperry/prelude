@@ -5,11 +5,12 @@ RANLIB = ranlib
 
 LIBS += -lm `pkg-config --libs openssl`
 CFLAGS += -Wall -Wextra -pedantic -Werror -g `pkg-config --cflags openssl`
-CPPFLAGS += -Ipkg
+CPPFLAGS += -Ipkg -I.
 LDFLAGS += -g
 
 PACKAGE_A = pkg/libprelude.a
-PACKAGE_O = pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
+PACKAGE_O = internal/splitmix64.o internal/xoshiro256plus.o \
+			pkg/array.o pkg/assert.o pkg/bytes.o pkg/core.o pkg/error.o \
 			pkg/rng.o pkg/string.o pkg/test.o
 
 ALL_O = $(PACKAGE_O) cmd/hello.o test/test_assert.o test/test_rng.o \

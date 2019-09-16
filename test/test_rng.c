@@ -2,29 +2,49 @@
 #include "prelude/test.h"
 
 static void case_xoshiro256plusInit(void) {
-    Splitmix64 s = Splitmix64_Init;
-    Xoshiro256plus xo = Xoshiro256plus_Init;
+    Open();
 
-    int i, n = Xoshiro256plus_StateLen;
+    Rng x, y;
+
+    Rng_New(&x, Rng_Xoshiro256plus);
+    Defer(Rng_Drop, &x);
+
+    Rng_New(&y, Rng_Xoshiro256plus);
+    Defer(Rng_Drop, &y);
+    Rng_Seed(&y, 0);
+
+    Assert(x.state.len == y.state.len);
+
+    Int i, n = x.state.len;
     for (i = 0; i < n; i++) {
-        Word64 x = Splitmix64_Next(&s);
-        Assert(x == xo.state[i]);
+        Assert(x.state.items[i] == y.state.items[i]);
     }
+
+    Close();
 }
 
 static void case_xoshiro256plusSeed(void) {
-    Splitmix64 s = Splitmix64_Init;
-    Xoshiro256plus xo = Xoshiro256plus_Init;
+    Open();
+
+    Rng s, xo;
     Int seed = 0x0fedc031337abcde;
 
-    Xoshiro256plus_Seed(&xo, seed);
-    Splitmix64_Seed(&s, seed);
+    Rng_New(&s, Rng_Splitmix64);
+    Defer(Rng_Drop, &s);
 
-    Int i, n = Xoshiro256plus_StateLen;
+    Rng_New(&xo, Rng_Xoshiro256plus);
+    Defer(Rng_Drop, &xo);
+
+    Rng_Seed(&s, seed);
+    Rng_Seed(&xo, seed);
+
+    Int i, n = xo.state.len;
     for (i = 0; i < n; i++) {
-        Word64 x = Splitmix64_Next(&s);
-        Assert(x == xo.state[i]);
+        Word64 x = Rng_Next(&s);
+        Assert(x == xo.state.items[i]);
     }
+
+    Close();
 }
 
 int main(int argc, const char **argv) {

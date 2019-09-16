@@ -27,8 +27,6 @@ typedef uint32_t Word32;
 typedef uint64_t Word64;
 
 #define Byte_Max UCHAR_MAX
-#define Word16_Max UINT16_MAX
-#define Word32_Max UINT32_MAX
 #define Word64_Max UINT64_MAX
 
 #define W64 UINT64_C

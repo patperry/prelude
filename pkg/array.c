@@ -4,6 +4,7 @@
 Implement_Array(Byte)
 Implement_Array(Bytes)
 Implement_Array(Int)
+Implement_Array(Word64)
 
 
 enum {
