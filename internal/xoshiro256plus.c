@@ -8,6 +8,7 @@
    Public Domain (CC0) 2018 by David Blackman and Sebastiano Vigna
  */
 
+#include "prelude/rng.h"
 #include "internal/rng.h"
 
 void Xoshiro256plus_Seed(Word64 *state, Int seed) {
@@ -111,4 +112,13 @@ void Xoshiro256plus_LongJump(Word64 *state) {
 Float Xoshiro256plus_Uniform(Word64 *state) {
     Word64 x = Xoshiro256plus_Next(state);
     return uniformFromWord64(x);
+}
+
+void Xoshiro256plus_Make(Word64 *state, Rng *rng) {
+    Rng_New(rng, Rng_Xoshiro256plus);
+    Int i, n = Xoshiro256plus_StateLen;
+    for (i = 0; i < n; i++) {
+        rng->state.items[i] = state[i];
+    }
+    Xoshiro256plus_Jump(state);
 }

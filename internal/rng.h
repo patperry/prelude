@@ -16,6 +16,7 @@ Float Splitmix64_Uniform(Word64 *state);
 void Xoshiro256plus_Seed(Word64 *state, Int seed);
 Word64 Xoshiro256plus_Next(Word64 *state);
 Float Xoshiro256plus_Uniform(Word64 *state);
+void Xoshiro256plus_Make(Word64 *state, Rng *rng);
 
 /* This is the jump function for the generator. It is equivalent
    to 2^128 calls to next(); it can be used to generate 2^128

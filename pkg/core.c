@@ -6,6 +6,7 @@
 #include <time.h>
 
 #include "prelude.h"
+#include "prelude/rng.h"
 #include "prelude/string.h"
 
 typedef enum {
@@ -76,29 +77,38 @@ typedef struct {
 #define MemoryStats_Init (MemoryStats){0, 0}
 
 typedef struct Runtime {
+    Bool panic_allowed;
     MemoryStats memory;
     LiteralsArray literals;
     FinalizerArray finalizers;
     TryPointArray tries;
     IntArray scopes;
     StringBuilder log_builder;
+    RngMaker rng_maker;
+    Rng rng;
 } Runtime;
-
-#define Runtime_Init (Runtime){\
-    MemoryStats_Init, \
-    LiteralsArray_Init, \
-    Array_Init(Finalizer), \
-    Array_Init(TryPoint), \
-    Array_Init(Int), \
-    StringBuilder_Init \
-}
 
 static void Runtime_Drop(void *arg);
 
 static Runtime runtime;
 
+void Runtime_New(Runtime *r) {
+    r->panic_allowed = False;
+    r->memory = MemoryStats_Init;
+    r->literals = LiteralsArray_Init;
+    r->finalizers = Array_Init(Finalizer);
+    r->tries = Array_Init(TryPoint);
+    r->scopes = Array_Init(Int);
+    r->log_builder = StringBuilder_Init;
+    RngMaker_New(&r->rng_maker, RngMaker_None);
+    RngMaker_Make(&r->rng_maker, &r->rng);
+    r->panic_allowed = True;
+}
+
 void Runtime_Drop(void *arg) {
     Runtime *r = arg;
+    Rng_Drop(&r->rng);
+    RngMaker_Drop(&r->rng_maker);
     StringBuilder_Drop(&r->log_builder);
     IntArray_Drop(&r->scopes);
     TryPointArray_Drop(&r->tries);
@@ -133,7 +143,7 @@ Bytes *LiteralsArray_Push(LiteralsArray *a, Bytes *x) {
 }
 
 void Initialize(void) {
-    runtime = Runtime_Init;
+    Runtime_New(&runtime);
 }
 
 void Finalize(void) {
@@ -348,4 +358,8 @@ void Info(String *fmt, ...) {
     va_start(ap, fmt);
     Log(Log_Info, fmt, ap);
     va_end(ap);
+}
+
+Rng *Random_Rng(void) {
+    return &runtime.rng;
 }

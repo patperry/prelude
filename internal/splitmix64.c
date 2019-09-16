@@ -5,10 +5,14 @@
    Public Domain (CC0) 2015 by Sebastiano Vigna
  */
 
+#include "prelude/rng.h"
 #include "internal/rng.h"
 
 void Splitmix64_Seed(Word64 *state, Int seed) {
-    state[0] = (Word64)seed; // TODO: handle NA seed
+    if (seed == Int_None) { // TODO: configurable default
+        seed = 0;
+    }
+    state[0] = (Word64)seed;
 }
 
 Word64 Splitmix64_Next(Word64 *state) {

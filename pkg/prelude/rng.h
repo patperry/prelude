@@ -31,9 +31,10 @@ Float Rng_Uniform(Rng *rng);
 typedef struct RngMakerType {
     Int state_len;
     void (*seed)(Word64 *state, Int seed);
-    void (*make)(Rng *rng, Word64 *state);
+    void (*make)(Word64 *state, Rng *rng);
 } RngMakerType;
 
+#define RngMaker_None (RngMakerType *)NULL
 extern RngMakerType *RngMaker_Xoshiro256plus;
 
 typedef struct RngMaker {
@@ -46,12 +47,9 @@ void RngMaker_Drop(void *arg);
 void RngMaker_Seed(RngMaker *m, Int seed);
 void RngMaker_Make(RngMaker *m, Rng *rng);
 
-
-void Random_Uniform(void);
 void Random_Seed(Int seed);
+Word64 Random_Next(void);
+Float Random_Uniform(void);
 Rng *Random_Rng(void);
-
-void Random_SeedMaker(Int seed);
-RngMaker *Random_RngMaker(void);
 
 #endif /* PRELUDE_RNG */

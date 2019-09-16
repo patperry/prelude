@@ -11,7 +11,7 @@ static void case_xoshiro256plusInit(void) {
 
     Rng_New(&y, Rng_Xoshiro256plus);
     Defer(Rng_Drop, &y);
-    Rng_Seed(&y, 0);
+    Rng_Seed(&y, Int_None);
 
     Assert(x.state.len == y.state.len);
 
@@ -47,6 +47,31 @@ static void case_xoshiro256plusSeed(void) {
     Close();
 }
 
+static void case_globalInit(void) {
+    Open();
+
+    Rng r;
+
+    Rng_New(&r, Rng_None);
+    Defer(Rng_Drop, &r);
+
+    Int i, n = 100;
+    for (i = 0; i < n; i++) {
+        Float x = Random_Uniform();
+        Float y = Rng_Uniform(&r);
+        Assert(x == y);
+    }
+
+    n = 100;
+    for (i = 0; i < n; i++) {
+        Word64 x = Random_Next();
+        Word64 y = Rng_Next(&r);
+        Assert(x == y);
+    }
+
+    Close();
+}
+
 int main(int argc, const char **argv) {
     Initialize();
     Open();
@@ -56,6 +81,7 @@ int main(int argc, const char **argv) {
 
     TestSuite_AddCase(&s, S("xoshiro256+ init"), case_xoshiro256plusInit);
     TestSuite_AddCase(&s, S("xoshiro256+ seed"), case_xoshiro256plusSeed);
+    TestSuite_AddCase(&s, S("global init"), case_globalInit);
 
     int ret = Test_Main(argc, argv, &s);
     Close();
