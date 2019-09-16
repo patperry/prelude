@@ -70,18 +70,3 @@ void RngMaker_Seed(RngMaker *m, Int seed) {
 void RngMaker_Make(RngMaker *m, Rng *rng) {
     (m->type->make)(m->state.items, rng);
 }
-
-Word64 Random_Next(void) {
-    Rng *rng = Random_Rng();
-    return Rng_Next(rng);
-}
-
-Float Random_Uniform(void) {
-    Rng *rng = Random_Rng();
-    return Rng_Uniform(rng);
-}
-
-void Random_Seed(Int seed) {
-    Rng *rng = Random_Rng();
-    Rng_Seed(rng, seed);
-}

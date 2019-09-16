@@ -47,9 +47,7 @@ void RngMaker_Drop(void *arg);
 void RngMaker_Seed(RngMaker *m, Int seed);
 void RngMaker_Make(RngMaker *m, Rng *rng);
 
-void Random_Seed(Int seed);
-Word64 Random_Next(void);
-Float Random_Uniform(void);
-Rng *Random_Rng(void);
+Rng *System_Rng(void);
+RngMaker *System_RngMaker(void);
 
 #endif /* PRELUDE_RNG */

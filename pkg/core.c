@@ -360,6 +360,10 @@ void Info(String *fmt, ...) {
     va_end(ap);
 }
 
-Rng *Random_Rng(void) {
+Rng *System_Rng(void) {
     return &runtime.rng;
+}
+
+RngMaker *System_RngMaker(void) {
+    return &runtime.rng_maker;
 }
