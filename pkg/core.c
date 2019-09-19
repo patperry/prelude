@@ -102,6 +102,7 @@ void Runtime_New(Runtime *r) {
     r->log_builder = StringBuilder_Init;
     RngMaker_New(&r->rng_maker, RngMaker_None);
     RngMaker_Make(&r->rng_maker, &r->rng);
+    FinalizerArray_Grow(&runtime.finalizers, 1); // ensure next Defer succeeds
     r->panic_allowed = True;
 }
 
@@ -165,7 +166,7 @@ void Open(void) {
     //Debug(S("push scope %d"), scope);
 }
 
-static void unroll(Int scope, Bool trap) {
+static void unwind(Int scope, Bool trap) {
     while (runtime.finalizers.len != scope) {
         Assert(runtime.finalizers.len >= scope);
 
@@ -190,8 +191,7 @@ static void unroll(Int scope, Bool trap) {
 void Close(void) {
     Assert(runtime.scopes.len > 0);
     Int scope = runtime.scopes.items[--runtime.scopes.len];
-    //Debug(S("pop scope %d"), scope);
-    unroll(scope, False);
+    unwind(scope, False);
 }
 
 void Try(void (*func)(void *arg), void *arg, Error *err) {
@@ -208,6 +208,13 @@ void Try(void (*func)(void *arg), void *arg, Error *err) {
 }
 
 void Panic(String *fmt, ...) {
+    if (!runtime.panic_allowed) {
+        fprintf(stderr, "unrecoverable panic: %.*s\n",
+                (int)fmt->bytes.len, (const char *)fmt->bytes.ptr);
+        abort();
+    }
+    runtime.panic_allowed = False;
+
     va_list ap;
     va_start(ap, fmt);
     Error err;
@@ -219,21 +226,22 @@ void Panic(String *fmt, ...) {
         *runtime.tries.items[n - 1].err = err;
         Int s = runtime.tries.items[n - 1].scope;
         Int l = runtime.tries.items[n - 1].scopes_len;
-        unroll(s, True);
+        unwind(s, True);
         runtime.scopes.len = l;
+        runtime.panic_allowed = True;
         longjmp(runtime.tries.items[n - 1].env, 1);
     } else {
         fprintf(stderr, "panic: %.*s\n", (int)err.string.bytes.len,
                 (const char *)err.string.bytes.ptr);
         Error_Drop(&err);
-        unroll(0, True);
+        unwind(0, True);
         abort();
     }
 }
 
 static void addFinalizer(FinalizerType type, void (*func)(void *arg),
                          void *arg) {
-    FinalizerArray_Grow(&runtime.finalizers, 1);
+    // grow *after* adding the finalizer to ensure the next add succeeds
     Int n = runtime.finalizers.len;
     runtime.finalizers.items[n] = (Finalizer){
         .func = func,
@@ -241,6 +249,7 @@ static void addFinalizer(FinalizerType type, void (*func)(void *arg),
         .type = type
     };
     runtime.finalizers.len = n + 1;
+    FinalizerArray_Grow(&runtime.finalizers, 1);
 }
 
 void Defer(void (*func)(void *arg), void *arg) {
